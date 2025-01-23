@@ -1,0 +1,101 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f4f4f9;
+    overflow-y: auto; /* Aggiunge lo scroll verticale */
+}
+
+.container {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px; /* Distanza tra le griglie e il contenuto sopra */
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(11, 40px); /* 10 colonne + 1 per etichetta */
+    grid-template-rows: repeat(11, 40px);    /* 10 righe + 1 per etichetta */
+    border: 2px solid #ddd;
+    background-color: white;
+    gap: 1px;
+    position: relative; /* Necessario per il posizionamento assoluto degli oggetti trascinabili */
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #e1e1e1;
+    border: 1px solid #ccc;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.cell-header {
+    background-color: #c2c2c2;
+}
+
+/* Stile del contenitore principale */
+.fleet {
+    display: flex;
+    flex-wrap: wrap; /* Permette di andare a capo su più righe */
+    position: relative; /* Posizionamento base per gli item */
+    height: auto; /* Altezza dinamica per contenere tutte le righe */
+    margin: 0 auto; /* Centrare orizzontalmente */
+    overflow: visible; /* Permette di trascinare fuori */
+    gap: 15px; /* Spazio tra gli elementi */
+    justify-content: center; /* Centrare gli elementi */
+    align-items: center; /* Allineare verticalmente */
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.fleet-item.single {
+    width: 40px;
+    height: 40px;
+    background-color: #88c8f9; /* Colore per i div da una casella */
+    cursor: move;
+    position: absolute; /* Necessario per il trascinamento */
+}
+
+.fleet-item.double-horizontal {
+    width: 80px;
+    height: 40px;
+    background-color: #ffb380; /* Colore per i div da due caselle orizzontali */
+    cursor: move;
+    position: absolute;
+}
+
+.fleet-item.double-vertical {
+    width: 40px;
+    height: 80px;
+    background-color: #ff80a1; /* Colore per il div da due caselle verticali */
+    cursor: move;
+    position: absolute;
+}
+
+.fleet-item.triple-vertical {
+    width: 40px;
+    height: 120px;
+    background-color: #f9f980; /* Colore per il div da tre caselle verticali */
+    cursor: move;
+    position: absolute;
+}
+
+.fleet-item.quadruple-vertical {
+    width: 40px;
+    height: 160px;
+    background-color: #f58b88; /* Colore per il div da quattro caselle verticali */
+    cursor: move;
+    position: absolute;
+}
