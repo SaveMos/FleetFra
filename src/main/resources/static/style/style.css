@@ -18,8 +18,8 @@ body {
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(11, 40px); /* 10 colonne + 1 per etichetta */
-    grid-template-rows: repeat(11, 40px);    /* 10 righe + 1 per etichetta */
+    grid-template-columns: repeat(11, 30px); /* 10 colonne + 1 per etichetta */
+    grid-template-rows: repeat(11, 30px);    /* 10 righe + 1 per etichetta */
     border: 2px solid #ddd;
     background-color: white;
     gap: 1px;
@@ -27,8 +27,8 @@ body {
 }
 
 .cell {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -42,60 +42,82 @@ body {
     background-color: #c2c2c2;
 }
 
-/* Stile del contenitore principale */
-.fleet {
-    display: flex;
-    flex-wrap: wrap; /* Permette di andare a capo su più righe */
-    position: relative; /* Posizionamento base per gli item */
-    height: auto; /* Altezza dinamica per contenere tutte le righe */
-    margin: 0 auto; /* Centrare orizzontalmente */
-    overflow: visible; /* Permette di trascinare fuori */
-    gap: 15px; /* Spazio tra gli elementi */
-    justify-content: center; /* Centrare gli elementi */
-    align-items: center; /* Allineare verticalmente */
-}
-
 h2 {
     text-align: center;
     margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fleet {
+    display: flex;
+    justify-content: flex-start; /* Allinea gli elementi in fila */
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.fleet-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative; /* Necessario per il trascinamento */
+    cursor: move;
+    transform-origin: center; /* Imposta il punto di rotazione al centro */
 }
 
 .fleet-item.single {
-    width: 40px;
-    height: 40px;
-    background-color: #88c8f9; /* Colore per i div da una casella */
-    cursor: move;
-    position: absolute; /* Necessario per il trascinamento */
+    width: 30px;
+    height: 30px;
+    background-color: #88c8f9;
+    border: 1px solid #88A2F9FF;
 }
 
-.fleet-item.double-horizontal {
-    width: 80px;
-    height: 40px;
-    background-color: #ffb380; /* Colore per i div da due caselle orizzontali */
-    cursor: move;
-    position: absolute;
+.fleet-item.double {
+    width: 60px;
+    height: 30px;
+    background-color: #ffb380;
+    border: 1px solid #FF9380FF;
+}
+
+.fleet-item.triple {
+    width: 90px;
+    height: 30px;
+    background-color: #f9f980;
+    border: 1px solid #F9C980FF;
+}
+
+.fleet-item.quadruple {
+    width: 120px;
+    height: 30px;
+    background-color: #f5889c;
+    border: 1px solid #F5889CFF;
+}
+
+.fleet-item.single-vertical {
+    width: 30px;
+    height: 30px;
+    background-color: #88c8f9;
+    border: 1px solid #88A2F9FF;
 }
 
 .fleet-item.double-vertical {
-    width: 40px;
-    height: 80px;
-    background-color: #ff80a1; /* Colore per il div da due caselle verticali */
-    cursor: move;
-    position: absolute;
+    width: 30px;
+    height: 60px;
+    background-color: #ffb380;
+    border: 1px solid #FF9380FF;
 }
 
 .fleet-item.triple-vertical {
-    width: 40px;
-    height: 120px;
-    background-color: #f9f980; /* Colore per il div da tre caselle verticali */
-    cursor: move;
-    position: absolute;
+    width: 30px;
+    height: 90px;
+    background-color: #f9f980;
+    border: 1px solid #F9C980FF;
 }
 
 .fleet-item.quadruple-vertical {
-    width: 40px;
-    height: 160px;
-    background-color: #f58b88; /* Colore per il div da quattro caselle verticali */
-    cursor: move;
-    position: absolute;
+    width: 30px;
+    height: 120px;
+    background-color: #f58b88;
+    border: 1px solid #F5889CFF;
 }
