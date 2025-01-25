@@ -9,6 +9,21 @@ body {
     background-color: #f4f4f9;
     overflow-y: auto; /* Aggiunge lo scroll verticale */
 }
+header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #256ec9;
+    height: 50px;
+    color: white;
+    padding: 0 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+h1 {
+    margin: 0;
+    font-size: 1.8rem;
+}
 
 .container {
     display: flex;
@@ -20,10 +35,9 @@ body {
     display: grid;
     grid-template-columns: repeat(11, 30px); /* 10 colonne + 1 per etichetta */
     grid-template-rows: repeat(11, 30px);    /* 10 righe + 1 per etichetta */
-    border: 2px solid #ddd;
+    border: 2px solid #1a3398;
     background-color: white;
-    gap: 1px;
-    position: relative; /* Necessario per il posizionamento assoluto degli oggetti trascinabili */
+    border-collapse: collapse;
 }
 
 .cell {
@@ -32,14 +46,15 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #e1e1e1;
-    border: 1px solid #ccc;
+    background-color: #88bdf9;
+    border: 1px solid #7f14c7;
     font-size: 12px;
     font-weight: bold;
 }
 
 .cell-header {
-    background-color: #c2c2c2;
+    background-color: #256ec9;
+    color: white;
 }
 
 h2 {
@@ -57,7 +72,7 @@ h2 {
     margin-top: 20px;
 }
 
-.fleet-item {
+.fleet_item {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -66,58 +81,85 @@ h2 {
     transform-origin: center; /* Imposta il punto di rotazione al centro */
 }
 
-.fleet-item.single {
+.fleet_item.single {
     width: 30px;
     height: 30px;
     background-color: #88c8f9;
     border: 1px solid #88A2F9FF;
 }
 
-.fleet-item.double {
+.fleet_item.double {
     width: 60px;
     height: 30px;
     background-color: #ffb380;
     border: 1px solid #FF9380FF;
 }
 
-.fleet-item.triple {
+.fleet_item.triple {
     width: 90px;
     height: 30px;
     background-color: #f9f980;
     border: 1px solid #F9C980FF;
 }
 
-.fleet-item.quadruple {
+.fleet_item.quadruple {
     width: 120px;
     height: 30px;
     background-color: #f5889c;
     border: 1px solid #F5889CFF;
 }
 
-.fleet-item.single-vertical {
+.fleet_item.single-vertical {
     width: 30px;
     height: 30px;
     background-color: #88c8f9;
     border: 1px solid #88A2F9FF;
 }
 
-.fleet-item.double-vertical {
+.fleet_item.double-vertical {
     width: 30px;
     height: 60px;
     background-color: #ffb380;
     border: 1px solid #FF9380FF;
 }
 
-.fleet-item.triple-vertical {
+.fleet_item.triple-vertical {
     width: 30px;
     height: 90px;
     background-color: #f9f980;
     border: 1px solid #F9C980FF;
 }
 
-.fleet-item.quadruple-vertical {
+.fleet_item.quadruple-vertical {
     width: 30px;
     height: 120px;
     background-color: #f58b88;
     border: 1px solid #F5889CFF;
+}
+
+.unavailable {
+    background-color: #88f9e8;
+}
+
+.taken{
+    background-color: #65de14;
+}
+.eligible{
+    background-color: #ff8000;
+}
+
+#rotateButton {
+    padding: 10px 15px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    background-color: #256ec9;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 140px;
+    text-align: center;
+}
+#rotateButton:hover {
+    background-color: #2d97d3;
 }
