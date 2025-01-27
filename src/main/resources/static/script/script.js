@@ -62,8 +62,9 @@ function createGrid(gridId) {
                 cell.classList.add("cell-header");
             } else {
                 // ID univoco della cella basato su griglia, riga e colonna
-                cell.id = `${gridId === "grid1" ? "user" : "opponent"},${i},${j}`;
+                //cell.id = `${gridId === "grid1" ? "user" : "opponent"},${i},${j}`;
             }
+            cell.id = `${gridId === "grid1" ? "user" : "opponent"},${i},${j}`;
             grid.appendChild(cell); // Aggiunge la cella alla griglia
         }
     }
@@ -77,9 +78,10 @@ function handleDivMouseOver(e) {
     for (let i = 0; i < e.target.shipSize; i++) {
         const targetRow = isHorizontal ? row : row + i; // Calcola la posizione delle celle target
         const targetCol = isHorizontal ? col + i : col;
-
+        console.log("row ="+targetRow);
+        console.log("col ="+targetCol);
         // Verifica se le celle sono valide per il posizionamento (>0) così non è valido in caso di 0 oppure -1
-        if (targetRow > 10 || targetCol > 10 || userGrid[targetRow][targetCol] !== 0) {
+        if (userGrid[targetRow][targetCol] !== 0) {
             console.log("nave non valida");
             isValid = false;
             break;
@@ -139,6 +141,10 @@ function handleDivClick(e) {
         if(isFleetEmpty()){
             rotateButton.disabled = true;
             startButton.disabled = false;
+
+            userGrid.forEach(row => {
+                console.log(row.join(' '));
+            });
 
         }
     }
@@ -205,11 +211,15 @@ window.onload = function () {
             document.querySelectorAll(".cell").forEach((cell) => {
                 // Verifica che la cella sia nella grid1 (controllo tramite id)
                 if (cell.closest('#grid1')) {
-                    cell.ship = item;
-                    cell.shipSize = shipArray[item.id].size;
-                    cell.addEventListener("mouseover", handleDivMouseOver);
-                    cell.addEventListener("mouseout", handleDivMouseOut);
-                    cell.addEventListener("click", handleDivClick);
+                    const [_, row, col] = cell.id.split(',').map(Number);
+                    // For the cells that contains number of letters the listeners aren't associated
+                    if(row !== 0 && col !== 0) {
+                        cell.ship = item;
+                        cell.shipSize = shipArray[item.id].size;
+                        cell.addEventListener("mouseover", handleDivMouseOver);
+                        cell.addEventListener("mouseout", handleDivMouseOut);
+                        cell.addEventListener("click", handleDivClick);
+                    }
                 }
             });
         });

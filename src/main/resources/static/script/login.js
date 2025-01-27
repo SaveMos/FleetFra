@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
         input.addEventListener('blur', () => {
             if (input.id === 'login-username') input.placeholder = 'Enter your username';
             if (input.id === 'login-password') input.placeholder = 'Enter your password';
+            if (input.id === 'signup-name') input.placeholder = 'Enter your name';
+            if (input.id === 'signup-surname') input.placeholder = 'Enter your surname';
             if (input.id === 'signup-username') input.placeholder = 'Choose a username';
             if (input.id === 'signup-email') input.placeholder = 'Enter your email';
             if (input.id === 'signup-password') input.placeholder = 'Create a password';
