@@ -1,3 +1,4 @@
+/*Common section*/
 body {
     font-family: Arial, sans-serif;
     display: flex;
@@ -11,18 +12,42 @@ body {
 }
 header {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     background-color: #256ec9;
     height: 50px;
     color: white;
-    padding: 0 1rem;
+    padding: 10px;
     width: 100%;
     box-sizing: border-box;
 }
+
+
+/*Game section*/
 h1 {
     margin: 0;
     font-size: 1.8rem;
+}
+.info-bar{
+    margin-top: 20px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #256ec9;
+    margin-left: 5px;
+}
+#homeButton{
+    margin-right: 10px;
+    float: right;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    background-color: #88bdf9;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    height: 30px;
+    width: 80px;
+    text-align: center;
 }
 
 .container {
@@ -57,14 +82,20 @@ h1 {
     color: white;
 }
 
-h2 {
+h3 {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     display: flex;
     align-items: center;
     gap: 10px;
+    /*margin-left: 40%;*/
 }
 
+#fleet-title{
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 1.5rem;
+}
 .fleet {
     display: flex;
     justify-content: flex-start; /* Allinea gli elementi in fila */
@@ -79,6 +110,7 @@ h2 {
     position: relative; /* Necessario per il trascinamento */
     cursor: move;
     transform-origin: center; /* Imposta il punto di rotazione al centro */
+    margin-bottom: 10px;
 }
 
 .fleet_item.single {
@@ -148,7 +180,7 @@ h2 {
     background-color: #ff8000;
 }
 
-#rotateButton {
+.gameButton {
     padding: 10px 15px;
     font-size: 1rem;
     border: none;
@@ -159,7 +191,14 @@ h2 {
     transition: background-color 0.3s;
     width: 140px;
     text-align: center;
+    margin-top: 20px
 }
-#rotateButton:hover {
+.gameButton:hover, #homeButton:hover {
     background-color: #2d97d3;
+}
+.gameButton:disabled {
+    background-color: rgba(37, 110, 201, 0.5);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: not-allowed;
+    transition: none;
 }

@@ -1,6 +1,8 @@
 // Inizializzazione della griglia dell'utente come array bidimensionale 11x11, con tutte le celle inizialmente vuote (valore 0)
 const userGrid = Array(11).fill(0).map(() => Array(11).fill(0));
 
+const rotateButton = document.querySelector("#rotateButton");
+const startButton = document.querySelector("#startButton");
 
 // Variabile per tracciare lo stato di orientamento della flotta (orizzontale o verticale)
 let isHorizontal = true;
@@ -20,7 +22,7 @@ const shipArray = [
 ];
 
 // Rotazione della flotta: il bottone consente di alternare tra orientamento orizzontale e verticale
-const rotateButton = document.querySelector("#rotateButton");
+
 rotateButton.addEventListener("click", rotateShips);
 
 // Funzione per alternare l'orientamento della flotta
@@ -134,7 +136,19 @@ function handleDivClick(e) {
 
         const fleetItem = document.getElementById(e.target.ship.id); // Rimuove la nave dalla lista
         fleetItem.remove();
+        if(isFleetEmpty()){
+            rotateButton.disabled = true;
+            startButton.disabled = false;
+
+        }
     }
+}
+// check if all ships are placed into the grid
+function isFleetEmpty() {
+    const fleet = document.getElementById("fleet");
+    const fleetItems = fleet.getElementsByClassName("fleet_item");
+    console.log("length: "+fleetItems.length);
+    return fleetItems.length === 0;
 }
 
 function placeShip(ship, boardName) {
@@ -182,6 +196,7 @@ function placeShip(ship, boardName) {
 window.onload = function () {
     createGrid("grid1"); // Crea la griglia dell'utente
     createGrid("grid2"); // Crea la griglia dell'avversario
+    startButton.disabled = true;
 
     const fleetItems = document.querySelectorAll('.fleet_item');
     fleetItems.forEach((item) => {

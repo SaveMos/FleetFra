@@ -1,33 +1,152 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FleetFra</title>
-    <link rel="stylesheet" href="style/style.css">
+    <title>Login & Registration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
 
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .container {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            background: #f7f7f7;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tabs button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .tabs button.active {
+            color: #764ba2;
+            border-bottom: 2px solid #764ba2;
+        }
+
+        .form-container {
+            padding: 20px;
+        }
+
+        .form-container form {
+            display: none;
+        }
+
+        .form-container form.active {
+            display: block;
+        }
+
+        .form-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .form-container input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            background: #764ba2;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .form-container button:hover {
+            background: #5e3c8b;
+        }
+    </style>
 </head>
 <body>
-<header><h1>FleetFra</h1></header>
 <div class="container">
-    <div id="grid1" class="grid"></div>
-    <div id="grid2" class="grid"></div>
+    <div class="tabs">
+        <button id="login-tab" class="active">Login</button>
+        <button id="register-tab">Register</button>
+    </div>
+    <div class="form-container">
+        <form id="login-form" class="active">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" placeholder="Enter your email" required>
+
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" placeholder="Enter your password" required>
+
+            <button type="submit">Login</button>
+        </form>
+
+        <form id="register-form">
+            <label for="register-name">Name</label>
+            <input type="text" id="register-name" placeholder="Enter your name" required>
+
+            <label for="register-email">Email</label>
+            <input type="email" id="register-email" placeholder="Enter your email" required>
+
+            <label for="register-password">Password</label>
+            <input type="password" id="register-password" placeholder="Create a password" required>
+
+            <button type="submit">Register</button>
+        </form>
+    </div>
 </div>
 
-<h2>Fleet <button id="rotateButton">Rotate Fleet</button></h2>
-<div id="fleet" class="fleet">
-    <div class="fleet_item single" id="0"></div>
-    <div class="fleet_item single" id="1"></div>
-    <div class="fleet_item single" id="2"></div>
-    <div class="fleet_item single" id="3"></div>
-    <div class="fleet_item double" id="4"></div>
-    <div class="fleet_item double" id="5"></div>
-    <div class="fleet_item double" id="6"></div>
-    <div class="fleet_item triple" id="7"></div>
-    <div class="fleet_item triple" id="8"></div>
-    <div class="fleet_item quadruple" id="9"></div>
-</div>
+<script>
+    const loginTab = document.getElementById('login-tab');
+    const registerTab = document.getElementById('register-tab');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
 
-<script src="script/script.js"></script>
+    loginTab.addEventListener('click', () => {
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+        loginForm.classList.add('active');
+        registerForm.classList.remove('active');
+    });
+
+    registerTab.addEventListener('click', () => {
+        registerTab.classList.add('active');
+        loginTab.classList.remove('active');
+        registerForm.classList.add('active');
+        loginForm.classList.remove('active');
+    });
+</script>
 </body>
 </html>
