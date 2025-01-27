@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="./css/main_menu.css">
+  <link rel="stylesheet" href="./css/player_main_page.css">
+  <title>TheWinningAgreement</title>
+</head>
+
+<body>
+
+  <header>
+    <nav class="navbar">
+      <div class="logout-container">
+        <button id="logout" class="logout-btn">Logout</button>
+      </div>
+      <div id="username-display"></div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="button-container">
+      <div class="dropdown">
+        <span class="wide-button">Play Game</span>
+        <div class="dropdown-content">
+          <a id="player">Play as Player</a>
+          <a id="guesser">Play as Guesser</a>
+        </div>
+      </div>
+      <a id="friend_btn" class="wide-button">Friends</a>
+      <a id="bgame_btn" class="wide-button">Browse games</a>
+      <br>
+    </div>
+  </main>
+
+</body>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="./js/playerMainPage.js"></script>
+</html>
