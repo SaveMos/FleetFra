@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import it.unipi.dsmt.CaveDowny.util.SessionManagement;
 
+import java.util.ArrayList;
 
 
 //this class manages HTTP requests and every response is a JSON object
@@ -59,13 +60,12 @@ public class UserController implements UserControllerInterface {
         System.out.println("Request username: " +  " " + request);
 
         // Call the handleGame method to handle the request
-        String matchId = userService.handleGame(request);
+        ArrayList<String> match = userService.handleGame(request);
 
-        if (matchId != null) {
+        if (match.getFirst() != null) {
             // A match has been found
-            String jsonResult = "{\"matchId\":\"" + matchId + "\",\"player1\":\"" +
-                    request + "\",\"player2\":\"" +
-                    "}";
+            String jsonResult = "{\"matchId\":\"" + match.getFirst() + "\",\"player1\":\"" +
+                    request + "\",\"player2\":\"" + match.getLast() + "\"}";
             return new ResponseEntity<>(jsonResult, HttpStatus.OK);
         }
 
