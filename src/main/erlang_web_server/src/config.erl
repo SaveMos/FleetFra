@@ -1,7 +1,9 @@
 %%%-------------------------------------------------------------------
 %%% @author Saverio
-%%% @copyright (C) 2025, <COMPANY>
+%%% @copyright (C) 2025, <FleetFra>
 %%% @doc
+%%%
+%%% This module provides the values for the constants of this project.
 %%%
 %%% @end
 %%% Created : 28. gen 2025 11:28
