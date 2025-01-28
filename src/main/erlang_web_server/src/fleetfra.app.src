@@ -1,0 +1,9 @@
+% File: src/fleetfra.app.src
+{application, fleetfra,
+  [{description, "FleetFra Application"},
+    {vsn, "1.0"},
+    {registered, [fleetfra_app]},
+    {modules, [fleetfra_app, fleetfra_sup, fleetfra_game_registry, fleetfra_web_server]},
+    {applications, [kernel, stdlib, inets]},
+    {mod, {fleetfra_app, []}},
+    {env, []}]}.
