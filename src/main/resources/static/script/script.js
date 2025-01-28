@@ -145,6 +145,7 @@ function handleDivClick(e) {
             userGrid.forEach(row => {
                 console.log(row.join(' '));
             });
+            setUserGrid(userGrid);
 
         }
     }
