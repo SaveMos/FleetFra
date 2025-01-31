@@ -53,6 +53,8 @@ init(Req, State) ->
                 {error, game_not_found} -> Response = build_response(<<"Game not found">>);
                 {fin, winner} -> Response = build_response(<<"VICTORY">>);
                 {fin, loser} -> Response = build_response(<<"DEFEAT">>)
+            % {"message":"Move accepted"}
+            % {"message":"VICTORY"}
             end;
 
         _ ->
