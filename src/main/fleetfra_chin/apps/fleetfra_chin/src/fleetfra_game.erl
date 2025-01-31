@@ -9,7 +9,7 @@
 %% @param {Player1, Player2, Battlefield1, Battlefield2} A tuple containing the players' names and their battlefields.
 %% @return void
 %%-------------------------------------------------------------------
--record(game, {game_id, players, battlefields, current_turn, game_over, winner}).
+-record(game, {game_id, players, battlefields, current_turn, game_over, winner, created_at}).
 
 start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}) ->
   %% Initialize ETS table
@@ -22,7 +22,8 @@ start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}) ->
     battlefields = #{player1 => Battlefield1, player2 => Battlefield2},
     current_turn = player1,
     game_over = false,
-    winner = none
+    winner = none,
+    created_at = erlang:system_time(second)  % Timestamp di creazione in secondi.
   },
 
   %put_game_state(GameID, GameState). %% Store the game state in the ETS.
@@ -45,27 +46,31 @@ init_ets() ->
 %% @return {ok, NewGameState} if the move is valid and accepted, or an error tuple if invalid.
 %%-------------------------------------------------------------------
 make_move(GameID, {Player, {Row, Col}}) ->
-  %io:format("#######################################################################################~n"),
-  %io:format("Move received: ~p~n", [{GameID, Player, Row, Col}]),
-  %print_game_state(GameID),
   PlayerAtom = binary_to_atom(Player, utf8),
+  io:format("#######################################################################################~n"),
+  io:format("~p ~n" , [PlayerAtom]),
+  io:format("#######################################################################################~n"),
+
+  %io:format("Move received: ~p~n", [{GameID, Player, Row, Col}]),
+
+  %print_game_state(GameID),
 
   case game_state_manager:get_game_state(GameID) of
     {ok, GameState} ->
       case GameState#game.current_turn of
         PlayerAtom ->
-          io:format("CONFRONTO SUPERATO~n"),
-
-          % Converte Player in atomo se è un binary
+          io:format("OK: ~p can play!~n" , [PlayerAtom]),
 
           case maps:find(PlayerAtom, GameState#game.battlefields) of
             {ok, PlayerBattlefield} ->
+              io:format("OK: ~p battlefield found!~n"  , [PlayerAtom]),
               case GameState#game.game_over of
                 true ->
                   case GameState#game.winner of
                     PlayerAtom ->
                       {fin, winner};
                     _ ->
+                      game_state_manager:delete_game_state(GameID),
                       {fin, loser}
                   end;
                 false ->
@@ -78,7 +83,7 @@ make_move(GameID, {Player, {Row, Col}}) ->
                   % Salva il nuovo stato del gioco
                   game_state_manager:put_game_state(GameID, NewGameState),
 
-                  io:format("Stato Vittoria [~p] -> # ~p # ~n", [NewGameState#game.game_over , NewGameState#game.winner]),
+                  io:format("REPORT: Match state [~p] -> # ~p # ~n", [NewGameState#game.game_over , NewGameState#game.winner]),
 
                   case NewGameState#game.game_over of
                     true ->
@@ -86,26 +91,26 @@ make_move(GameID, {Player, {Row, Col}}) ->
                         PlayerAtom ->
                           {fin, winner};
                         _ ->
+                          game_state_manager:delete_game_state(GameID),
                           {fin, loser}
                       end;
-                    false->
+                    _ ->
                       {ok, ok_move}
                   end
               end;
-              %io:format("Player battlefield found~n"),
 
             error ->
-              io:format("Player battlefield not found~n"),
+              io:format("ERROR: ~p battlefield not found!~n"  , [PlayerAtom]),
               {error, player_not_found}
           end;
 
         _ ->
-          io:format("CONFRONTO FALLITO~n"),
+          io:format("ERROR: ~p can't play yet!~n" , [PlayerAtom]),
           {error, not_your_turn} % Non è il suo turno.
       end;
 
     {error, not_found} ->
-      io:format("PARTITA NON TROVATA~n"),
+      io:format("ERROR: Can't find the match ~p~n", [GameID]),
       {error, game_not_found}
   end.
 
@@ -184,7 +189,7 @@ update_game_state(GameState, Player, NewBattlefield) ->
   % Verifica se il gioco è finito
   GameOver = check_game_over(PlayerBattlefield),
 
-  io:format("GameOver ~p ~n", [GameOver]),
+  %io:format("GameOver ~p ~n", [GameOver]),
 
   Winner = case GameOver of
               true -> PlayerAtom;
@@ -192,7 +197,7 @@ update_game_state(GameState, Player, NewBattlefield) ->
             end,
 
   % Restituisci il nuovo GameState
-  GameState#game{battlefields = NewBattlefields, current_turn = NewTurn, game_over = GameOver, winner = Winner}.
+  GameState#game{battlefields = NewBattlefields, current_turn = NewTurn, game_over = GameOver, winner = Winner ,created_at = erlang:system_time(second)}.
 
 
 %%-------------------------------------------------------------------

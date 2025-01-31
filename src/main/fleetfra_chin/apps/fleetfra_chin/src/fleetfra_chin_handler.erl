@@ -12,7 +12,7 @@
 %% @return {ok, Req2, State} The updated request and state.
 %%-------------------------------------------------------------------
 init(Req, State) ->
-    io:format("request received!~n"),
+    %io:format("REPORT: request received!~n"),
     %% Parse JSON body
     {ok, Body, Req1} = cowboy_req:read_body(Req),
 
@@ -25,7 +25,7 @@ init(Req, State) ->
     %% Handle the request based on its type
     case TypeRequest of
         <<"start_game">> ->
-            io:format("start-game request received!~n"),
+            %io:format("start-game request received!~n"),
             Player1 = maps:get(<<"player1">>, ParsedJson),
             Player2 = maps:get(<<"player2">>, ParsedJson),
             Battlefield1 = maps:get(<<"player1_battlefield">>, ParsedJson),
@@ -37,14 +37,14 @@ init(Req, State) ->
             Response = build_response(<<"Game started">>);
 
         <<"make_move">> ->
-            io:format("move request received!~n"),
+            %io:format("move request received!~n"),
             Player =  maps:get(<<"player">>, ParsedJson),
             Move = maps:get(<<"move">>, ParsedJson),
             Row = maps:get(<<"row">>, Move),
             Col = maps:get(<<"col">>, Move),
             %% Make the move
             case fleetfra_game:make_move(GameID, {Player, {Row, Col}}) of
-                {ok, ok_move} -> Response = build_response(<<"Move accepted">>);
+                {ok, _} -> Response = build_response(<<"Move accepted">>);
                 {error, invalid_move} -> Response = build_response(<<"Invalid move">>);
                 {error, not_your_turn} -> Response = build_response(<<"Not your turn">>);
                 {error, player_not_found} -> Response = build_response(<<"Player not found">>);

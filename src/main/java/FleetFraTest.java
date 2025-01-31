@@ -172,6 +172,10 @@ public class FleetFraTest {
                 // Stampa direttamente il contenuto della risposta senza fare parsing
                 System.out.println("Erlang response: " + makeMoveResponse);
 
+                if(makeMoveResponse.equals("{\"message\":\"Game not found\"}")) {
+                    break;
+                }
+
                 // Verifica se il gioco è terminato (ad esempio, controllo di "VICTORY" o "DEFEAT" direttamente dalla risposta)
                 if (makeMoveResponse.equals("{\"message\":\"VICTORY\"}")) {
                     if (currentPlayer.equals(player1ID)){
