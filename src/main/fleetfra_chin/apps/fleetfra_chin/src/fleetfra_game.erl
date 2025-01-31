@@ -2,7 +2,7 @@
 -export([start_game/2, make_move/2]).
 -author("SaveMos").
 %%-------------------------------------------------------------------
-%% @author Saverio
+%% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Starts a new game by storing the initial game state and the players' battlefields.
@@ -40,6 +40,8 @@ init_ets() ->
   end.
 
 %%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Makes a move in the game by updating the corresponding battlefield.
 %% It checks if the move is valid and updates the game state accordingly.
@@ -108,6 +110,8 @@ make_move(GameID, {Player, {Row, Col}}) ->
   end.
 
 %%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Updates the battlefield matrix with a new value at the specified row and column.
 %% This function assumes the battlefield is a 10x10 matrix represented as a list of lists.
@@ -149,6 +153,8 @@ check_adjacent_to_shot(Battlefield, Row, Col) ->
             end, Battlefield).
 
 %%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Updates the game state after a move by updating the battlefield, the current turn, and checking if the game is over.
 %% @param GameState The current game state.
@@ -188,6 +194,8 @@ update_game_state(GameState, Player, NewBattlefield) ->
   GameState#game{battlefields = NewBattlefields, current_turn = NewTurn, game_over = GameOver, winner = Winner, created_at = erlang:system_time(second)}.
 
 %%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Checks if the game is over, meaning all the ships of one player have been hit.
 %% @param GameState The current game state.

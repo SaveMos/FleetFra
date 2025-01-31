@@ -63,6 +63,8 @@ init(Req, State) ->
     {ok, Req2, State}.
 
 %%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Parses the incoming JSON request body and returns a map.
 %% @param Body The JSON body of the request.
@@ -73,6 +75,8 @@ parse_json(Body) ->
     jsx:decode(Body, [return_maps]).
 
 %%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Builds a JSON response string to send back to the client.
 %% @param Message The message to include in the response.
