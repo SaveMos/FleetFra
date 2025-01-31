@@ -1,9 +1,11 @@
 -module(fleetfra_chin_handler).
 -behaviour(cowboy_handler).
-
+-author("SaveMos").
 -export([init/2]).
 
 %%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Handles incoming HTTP requests for starting a game or making a move.
 %% Parses the request body, extracts the game information, and calls the appropriate game logic functions.

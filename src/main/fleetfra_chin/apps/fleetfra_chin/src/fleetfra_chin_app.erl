@@ -1,4 +1,6 @@
 %%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% This module starts the HTTP server using Cowboy.
 %%
@@ -16,12 +18,14 @@
 %%%-------------------------------------------------------------------
 
 -module(fleetfra_chin_app).
-
+-author("SaveMos").
 -behaviour(application).
 
 -export([start/2, stop/1]).
 
 %%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Starts the HTTP server.
 %%
@@ -60,6 +64,8 @@ start(_StartType, _StartArgs) ->
   fleetfra_chin_sup:start_link().
 
 %%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Stops the application.
 %%

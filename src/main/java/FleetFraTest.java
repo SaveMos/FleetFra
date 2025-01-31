@@ -13,7 +13,13 @@ public class FleetFraTest {
 
     private static final String SERVER_URL = "http://10.2.1.30:8080";
 
-    // Utility per inviare una richiesta POST con un payload JSON
+    /**
+     * Utility method to send a POST request with a JSON payload.
+     * @param url The target URL.
+     * @param jsonPayload The JSON string to send as the request body.
+     * @return The response as a String.
+     * @throws Exception If an error occurs during the request.
+     */
     public static String sendPostRequest(String url, String jsonPayload) throws Exception {
         HttpPost postRequest = new HttpPost(url);
         postRequest.setEntity(new StringEntity(jsonPayload, StandardCharsets.UTF_8));
@@ -31,7 +37,14 @@ public class FleetFraTest {
         }
     }
 
-    // Funzione per creare la richiesta di avvio del gioco
+    /**
+     * Creates a request to start a new game.
+     * @param gameId The unique game identifier.
+     * @param player1 The first player's ID.
+     * @param player2 The second player's ID.
+     * @return JSON formatted request string.
+     * @throws Exception If an error occurs during JSON processing.
+     */
     public static String createStartGameRequest(String gameId, String player1, String player2) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonPayload = objectMapper.writeValueAsString(Map.of(
@@ -45,7 +58,15 @@ public class FleetFraTest {
         return jsonPayload;
     }
 
-    // Funzione per creare la richiesta di fare una mossa
+    /**
+     * Creates a request for making a move.
+     * @param gameId The unique game identifier.
+     * @param player The player's ID making the move.
+     * @param row The row coordinate of the move.
+     * @param col The column coordinate of the move.
+     * @return JSON formatted request string.
+     * @throws Exception If an error occurs during JSON processing.
+     */
     public static String createMakeMoveRequest(String gameId, String player, int row, int col) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonPayload = objectMapper.writeValueAsString(Map.of(
@@ -57,7 +78,10 @@ public class FleetFraTest {
         return jsonPayload;
     }
 
-    // Funzione per generare una griglia di battaglia vuota (ad esempio 10x10 con 0)
+    /**
+     * Generates an empty battlefield grid (10x10 initialized with 0s) and places predefined ships.
+     * @return A list of maps representing the battlefield grid.
+     */
     public static List<Map<String, Integer>> generateBattlefield() {
         int rows = 10;
         int cols = 10;
@@ -96,25 +120,26 @@ public class FleetFraTest {
         return battlefield;
     }
 
-    // Funzione per impostare il valore di una cella nel campo di battaglia
+    /**
+     * Sets the value of a specific cell in the battlefield.
+     * @param battlefield The battlefield grid.
+     * @param row The row index.
+     * @param col The column index.
+     * @param value The value to set.
+     */
     private static void setCell(List<Map<String, Integer>> battlefield, int row, int col, int value) {
         battlefield.stream()
                 .filter(cell -> cell.get("row") == row && cell.get("col") == col)
                 .forEach(cell -> cell.put("value", value));
     }
 
-    // Funzione per ottenere il valore di una cella nel campo di battaglia
-    private static int getCell(List<Map<String, Integer>> battlefield, int row, int col) {
-        return battlefield.stream()
-                .filter(cell -> cell.get("row") == row && cell.get("col") == col)
-                .map(cell -> cell.get("value"))
-                .findFirst()
-                .orElse(0);
-    }
-
-    // Funzione per verificare se un giocatore ha vinto (tutte le sue navi sono affondate)
+    /**
+     * Checks if a player has won (all ships have been sunk).
+     * @param battlefield The battlefield grid.
+     * @return True if all ships are destroyed, otherwise false.
+     */
     public static boolean checkForVictory(List<Map<String, Integer>> battlefield) {
-        return battlefield.stream().allMatch(cell -> cell.get("value") == 0); // Verifica che tutte le celle delle navi siano colpite
+        return battlefield.stream().allMatch(cell -> cell.get("value") == 0);
     }
 
     public static void main(String[] args) {
@@ -125,21 +150,21 @@ public class FleetFraTest {
             String player1ID = "player1";
             String player2ID = "player2";
 
-            // Invia la richiesta di avvio del gioco
+            // Send request to start the game
             String startGameJson = createStartGameRequest(gameID, player1ID, player2ID);
             String startGameResponse = sendPostRequest(SERVER_URL , startGameJson);
             System.out.println("Start Game Response: " + startGameResponse);
 
-            // Eseguiamo il ciclo di gioco alternando le mosse
+            // Game loop: alternate turns
             Random rand = new Random();
             List<Map<String, Integer>> player1Battlefield = generateBattlefield();
             List<Map<String, Integer>> player2Battlefield = generateBattlefield();
 
-            // Lista delle posizioni delle navi per player1 (che deve affondarle tutte)
+            // List the ship positions for player2 (player1 has to sink them)
             List<Map<String, Integer>> player2ShipPositions = new ArrayList<>();
             for (Map<String, Integer> cell : player2Battlefield) {
                 if (cell.get("value") == 1) {
-                    player2ShipPositions.add(cell);
+                    player2ShipPositions.add(cell);  // Collect the cells where player2's ships are located
                 }
             }
 
@@ -152,15 +177,15 @@ public class FleetFraTest {
                 int row = -1, col = -1;
 
                 if (currentPlayer.equals(player1ID) && player2ShipPositions.size() > 0) {
-                    // Player1 colpisce le posizioni delle navi di player2 senza sbagliare
+                    // Player1 hits positions of player2's ships without missing
                     Map<String, Integer> targetCell = player2ShipPositions.get(0);
                     row = targetCell.get("row");
                     col = targetCell.get("col");
 
-                    // Rimuovi la nave colpita dalla lista
+                    // Remove the hit ship from the list
                     player2ShipPositions.remove(0);
                 } else {
-                    // Player2 spara a caso
+                    // Player2 shoots randomly
                     row = rand.nextInt(10);
                     col = rand.nextInt(10);
                 }
@@ -169,36 +194,36 @@ public class FleetFraTest {
                 String makeMoveResponse = sendPostRequest(SERVER_URL, makeMoveJson);
                 System.out.println(currentPlayer + " makes move to (" + row + ", " + col + "): " + makeMoveResponse);
 
-                // Stampa direttamente il contenuto della risposta senza fare parsing
+                // Print the response directly without parsing
                 System.out.println("Erlang response: " + makeMoveResponse);
 
                 if(makeMoveResponse.equals("{\"message\":\"Game not found\"}")) {
-                    break;
+                    break;  // If the game is not found, exit the loop
                 }
 
-                // Verifica se il gioco è terminato (ad esempio, controllo di "VICTORY" o "DEFEAT" direttamente dalla risposta)
+                // Check if the game has ended (e.g., "VICTORY" or "DEFEAT" directly from the response)
                 if (makeMoveResponse.equals("{\"message\":\"VICTORY\"}")) {
                     if (currentPlayer.equals(player1ID)){
-                        player1FinalState = "VICTORY";
+                        player1FinalState = "VICTORY";  // Player1 won
                     }else{
-                        player2FinalState = "VICTORY";
+                        player2FinalState = "VICTORY";  // Player2 won
                     }
                 }
 
                 if (makeMoveResponse.equals("{\"message\":\"DEFEAT\"}")) {
                     if (currentPlayer.equals(player1ID)){
-                        player1FinalState = "DEFEAT";
+                        player1FinalState = "DEFEAT";  // Player1 lost
                     }else{
-                        player2FinalState = "DEFEAT";
+                        player2FinalState = "DEFEAT";  // Player2 lost
                     }
                 }
 
-                if ((player1FinalState == "VICTORY" || player1FinalState == "DEFEAT") &&
-                        (player2FinalState == "VICTORY" || player2FinalState == "DEFEAT")){
-                    break;
+                if ((player1FinalState.equals("VICTORY") || player1FinalState.equals("DEFEAT")) &&
+                        (player2FinalState.equals("VICTORY") || player2FinalState.equals("DEFEAT"))){
+                    break;  // End the game if both players have a final state (either victory or defeat)
                 }
 
-                turn++; // Passa al turno successivo
+                turn++; // Proceed to the next turn
             }
 
         } catch (Exception e) {
