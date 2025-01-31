@@ -1,3 +1,4 @@
+let user = sessionStorage.getItem("userLog");
 // Inizializzazione della griglia dell'utente come array bidimensionale 11x11, con tutte le celle inizialmente vuote (valore 0)
 const userGrid = Array(11).fill(0).map(() => Array(11).fill(0));
 
@@ -81,7 +82,7 @@ function handleDivMouseOver(e) {
         console.log("row ="+targetRow);
         console.log("col ="+targetCol);
         // Verifica se le celle sono valide per il posizionamento (>0) così non è valido in caso di 0 oppure -1
-        if (userGrid[targetRow][targetCol] !== 0) {
+        if (targetRow > 10 || targetCol > 10 || userGrid[targetRow][targetCol] !== 0) {
             console.log("nave non valida");
             isValid = false;
             break;
@@ -201,6 +202,9 @@ function placeShip(ship, boardName) {
 
 // Inizializzazione della pagina
 window.onload = function () {
+
+    document.getElementById("playerHeader").innerText = user;
+
     createGrid("grid1"); // Crea la griglia dell'utente
     createGrid("grid2"); // Crea la griglia dell'avversario
     startButton.disabled = true;
