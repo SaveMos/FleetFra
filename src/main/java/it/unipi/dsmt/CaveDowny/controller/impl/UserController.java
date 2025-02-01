@@ -3,6 +3,7 @@ package it.unipi.dsmt.CaveDowny.controller.impl;
 
 
 import it.unipi.dsmt.CaveDowny.DAO.UserDAO;
+import it.unipi.dsmt.CaveDowny.service.Matchmaking;
 import it.unipi.dsmt.CaveDowny.service.UserService;
 import it.unipi.dsmt.CaveDowny.DTO.*;
 import it.unipi.dsmt.CaveDowny.controller.UserControllerInterface;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import it.unipi.dsmt.CaveDowny.util.SessionManagement;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 //this class manages HTTP requests and every response is a JSON object
@@ -32,7 +34,7 @@ public class UserController implements UserControllerInterface {
     public ResponseEntity<String> signUp(@RequestBody UserDTO UserSignUp) {
 
         //create a new UserDTO object with the data received from the request
-        UserDTO user = new UserDTO(UserSignUp.getFirstName(), UserSignUp.getLastName(), UserSignUp.getUsername(), UserSignUp.getPassword());
+        UserDTO user = new UserDTO(UserSignUp.getFirstName(), UserSignUp.getLastName(), UserSignUp.getUsername(), UserSignUp.getPassword(), UserSignUp.getEmail());
         //call the signup method of the UserDAO class
         int control = userDao.signup(user);
 
@@ -51,6 +53,7 @@ public class UserController implements UserControllerInterface {
 
     //class to manage the game
     UserService userService = new UserService();
+    HashMap<String, Matchmaking> waitingQueue = new HashMap<>();
 
     //endpoint API for game
     @Async
@@ -60,12 +63,21 @@ public class UserController implements UserControllerInterface {
         System.out.println("Request username: " +  " " + request);
 
         // Call the handleGame method to handle the request
-        ArrayList<String> match = userService.handleGame(request);
+        ArrayList<String> match = null;
+        match = userService.handleGame(request, waitingQueue);
+
 
         if (match.getFirst() != null) {
             // A match has been found
             String jsonResult = "{\"matchId\":\"" + match.getFirst() + "\",\"player1\":\"" +
                     request + "\",\"player2\":\"" + match.getLast() + "\"}";
+            System.out.println(jsonResult);
+
+
+            synchronized (waitingQueue) {
+               waitingQueue.remove(match.getFirst());
+            }
+
             return new ResponseEntity<>(jsonResult, HttpStatus.OK);
         }
 

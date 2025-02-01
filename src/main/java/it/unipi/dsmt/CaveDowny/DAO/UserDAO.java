@@ -16,9 +16,9 @@ public class UserDAO extends BaseDAO {
         // SQL query to check if the username already exists
         String checkExistingUserSQL = "SELECT * FROM FleetFra.user WHERE Username = ?";
         String registerUserSQL = "INSERT INTO FleetFra.user" +
-                "(Username, Name, Surname, Password)" +
+                "(Username, Name, Surname, Password, Email)" +
                 "VALUES" +
-                "(?,?,?,?);";
+                "(?,?,?,?,?);";
 
         try (Connection connection = getConnection()) {
             connection.setAutoCommit(false);
@@ -45,6 +45,7 @@ public class UserDAO extends BaseDAO {
                 preparedStatement.setString(2, user.getFirstName());
                 preparedStatement.setString(3, user.getLastName());
                 preparedStatement.setString(4, user.getPassword());
+                preparedStatement.setString(5, user.getEmail());
 
 
                 if (preparedStatement.executeUpdate() == 0) {
@@ -79,9 +80,7 @@ public class UserDAO extends BaseDAO {
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.next()) {
                     UserDTO userDTO = new UserDTO();
-                    userDTO.setUsername(resultSet.getString("username"));
-                    userDTO.setFirstName(resultSet.getString("name"));
-                    userDTO.setLastName(resultSet.getString("surname"));
+                    userDTO.setUsername(resultSet.getString("Username"));
                     return userDTO;
                 } else {
                     return null;
