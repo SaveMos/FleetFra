@@ -30,6 +30,9 @@ public class GenericController implements GenericControllerInterface {
     public ResponseEntity<ResponseRequest> login(@RequestBody UserAccessRequest requestUser) {
         //get the session
         session = SessionManagement.getInstance();
+        if(session.isUserLogged(requestUser.getUsername()))
+            return new ResponseEntity<>(new ResponseRequest("User already logged"), HttpStatus.FORBIDDEN);
+
         System.out.println("Login request received: " + requestUser.getUsername() + " " + requestUser.getPassword());
         ResponseRequest responsereq;
 
