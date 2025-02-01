@@ -9,7 +9,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public class FleetFraTest {
+public class FleetFraChinExecution {
 
     private static final String SERVER_URL = "http://10.2.1.30:8080";
 
@@ -133,15 +133,6 @@ public class FleetFraTest {
                 .forEach(cell -> cell.put("value", value));
     }
 
-    /**
-     * Checks if a player has won (all ships have been sunk).
-     * @param battlefield The battlefield grid.
-     * @return True if all ships are destroyed, otherwise false.
-     */
-    public static boolean checkForVictory(List<Map<String, Integer>> battlefield) {
-        return battlefield.stream().allMatch(cell -> cell.get("value") == 0);
-    }
-
     public static void main(String[] args) {
         try {
             String gameID = "game123";
@@ -149,12 +140,65 @@ public class FleetFraTest {
             String player2FinalState = "";
             String player1ID = "player1";
             String player2ID = "player2";
+            String currentPlayer;
+            String requestJson, responseJson;
 
-            // Send request to start the game
-            String startGameJson = createStartGameRequest(gameID, player1ID, player2ID);
-            String startGameResponse = sendPostRequest(SERVER_URL , startGameJson);
-            System.out.println("Start Game Response: " + startGameResponse);
+            // NOT STARTED YET TEST
+            requestJson = createMakeMoveRequest(gameID, player1ID, 0, 0);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"ERROR: Game not found\"}");
 
+            // STARTING GAME TEST
+            requestJson = createStartGameRequest(gameID, player1ID, player2ID);
+            responseJson = sendPostRequest(SERVER_URL , requestJson);
+            assert responseJson.equals("{\"message\":\"OK: Game started\"}");
+
+            // INVALID MOVE TESTS
+            requestJson = createMakeMoveRequest(gameID, player1ID, 0, -1);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
+
+            requestJson = createMakeMoveRequest(gameID, player1ID, 11, 0);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
+
+            requestJson = createMakeMoveRequest(gameID, player1ID, -1, 0);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
+
+            requestJson = createMakeMoveRequest(gameID, player1ID, 0, 10);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
+
+            requestJson = createMakeMoveRequest(gameID, player1ID, 10, 10);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
+
+            requestJson = createMakeMoveRequest(gameID, player1ID, -1, -1);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
+
+            // VALID MOVE TEST
+            requestJson = createMakeMoveRequest(gameID, player1ID, 0, 0);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"OK: Move accepted\"}");
+
+            // TURN ERROR TEST
+            requestJson = createMakeMoveRequest(gameID, player1ID, 1, 1);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"TURN ERROR: Not your turn\"}");
+
+            // INVALID PLAYER TEST
+            requestJson = createMakeMoveRequest(gameID, "fake_player", 1, 1);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"ERROR: Player not found\"}");
+
+            // INVALID GAME TEST
+            requestJson = createMakeMoveRequest("fake_game", player1ID, 1, 1);
+            responseJson = sendPostRequest(SERVER_URL, requestJson);
+            assert responseJson.equals("{\"message\":\"ERROR: Game not found\"}");
+
+            // SIMULATED MATCH TEST
             // Game loop: alternate turns
             Random rand = new Random();
             List<Map<String, Integer>> player1Battlefield = generateBattlefield();
@@ -170,39 +214,40 @@ public class FleetFraTest {
 
             int turn = 0;
             while (true) {
-                String currentPlayer = (turn % 2 == 0) ? player1ID : player2ID;
+                currentPlayer = (turn % 2 == 0) ? player1ID : player2ID;
                 List<Map<String, Integer>> currentPlayerBattlefield = (turn % 2 == 0) ? player1Battlefield : player2Battlefield;
                 List<Map<String, Integer>> opponentBattlefield = (turn % 2 == 0) ? player2Battlefield : player1Battlefield;
 
                 int row = -1, col = -1;
 
-                if (currentPlayer.equals(player1ID) && player2ShipPositions.size() > 0) {
+                if (currentPlayer.equals(player1ID) && !player2ShipPositions.isEmpty()) {
                     // Player1 hits positions of player2's ships without missing
                     Map<String, Integer> targetCell = player2ShipPositions.get(0);
                     row = targetCell.get("row");
                     col = targetCell.get("col");
 
                     // Remove the hit ship from the list
-                    player2ShipPositions.remove(0);
+                    player2ShipPositions.removeFirst();
                 } else {
                     // Player2 shoots randomly
                     row = rand.nextInt(10);
                     col = rand.nextInt(10);
                 }
 
-                String makeMoveJson = createMakeMoveRequest(gameID, currentPlayer, row, col);
-                String makeMoveResponse = sendPostRequest(SERVER_URL, makeMoveJson);
-                System.out.println(currentPlayer + " makes move to (" + row + ", " + col + "): " + makeMoveResponse);
+                requestJson = createMakeMoveRequest(gameID, currentPlayer, row, col);
+                responseJson = sendPostRequest(SERVER_URL, requestJson);
+                assert (responseJson.equals("{\"message\":\"OK: Move accepted\"}") ||
+                        responseJson.equals("{\"message\":\"VICTORY\"}") ||
+                        responseJson.equals("{\"message\":\"DEFEAT\"}") ||
+                        responseJson.equals("{\"message\":\"ERROR: Game not found\"}")
+                        );
 
-                // Print the response directly without parsing
-                System.out.println("Erlang response: " + makeMoveResponse);
-
-                if(makeMoveResponse.equals("{\"message\":\"Game not found\"}")) {
-                    break;  // If the game is not found, exit the loop
+                if(responseJson.equals("{\"message\":\"ERROR: Game not found\"}")) {
+                    break;  // If the game is not found, exit the loop.
                 }
 
                 // Check if the game has ended (e.g., "VICTORY" or "DEFEAT" directly from the response)
-                if (makeMoveResponse.equals("{\"message\":\"VICTORY\"}")) {
+                if (responseJson.equals("{\"message\":\"VICTORY\"}")) {
                     if (currentPlayer.equals(player1ID)){
                         player1FinalState = "VICTORY";  // Player1 won
                     }else{
@@ -210,7 +255,7 @@ public class FleetFraTest {
                     }
                 }
 
-                if (makeMoveResponse.equals("{\"message\":\"DEFEAT\"}")) {
+                if (responseJson.equals("{\"message\":\"DEFEAT\"}")) {
                     if (currentPlayer.equals(player1ID)){
                         player1FinalState = "DEFEAT";  // Player1 lost
                     }else{

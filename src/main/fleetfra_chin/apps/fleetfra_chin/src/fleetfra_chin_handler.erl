@@ -36,7 +36,7 @@ init(Req, State) ->
             fleetfra_game:start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}),
             %io:format("Battlefield1: ~p~n", [Battlefield1]),
             %io:format("Battlefield2: ~p~n", [Battlefield2]),
-            Response = build_response(<<"Game started">>);
+            Response = build_response(<<"OK: Game started">>);
 
         <<"make_move">> ->
             %io:format("move request received!~n"),
@@ -46,11 +46,13 @@ init(Req, State) ->
             Col = maps:get(<<"col">>, Move),
             %% Make the move
             case fleetfra_game:make_move(GameID, {Player, {Row, Col}}) of
-                {ok, _} -> Response = build_response(<<"Move accepted">>);
+                {ok, _} -> Response = build_response(<<"OK: Move accepted">>);
                 {error, invalid_move} -> Response = build_response(<<"Invalid move">>);
-                {error, not_your_turn} -> Response = build_response(<<"Not your turn">>);
-                {error, player_not_found} -> Response = build_response(<<"Player not found">>);
-                {error, game_not_found} -> Response = build_response(<<"Game not found">>);
+                {error, out_of_bound_coordinates} -> Response = build_response(<<"INVALID MOVE: Out of bound coordinates">>);
+                {error, not_integer} -> Response = build_response(<<"INVALID MOVE: Coordinates must be integers">>);
+                {error, not_your_turn} -> Response = build_response(<<"TURN ERROR: Not your turn">>);
+                {error, player_not_found} -> Response = build_response(<<"ERROR: Player not found">>);
+                {error, game_not_found} -> Response = build_response(<<"ERROR: Game not found">>);
                 {fin, winner} -> Response = build_response(<<"VICTORY">>);
                 {fin, loser} -> Response = build_response(<<"DEFEAT">>)
             % {"message":"Move accepted"}
