@@ -11,7 +11,7 @@
 %% @param {Player1, Player2, Battlefield1, Battlefield2} A tuple containing the players' names and their battlefields.
 %% @return void
 %%-------------------------------------------------------------------
--record(game, {game_id, players, battlefields, current_turn, game_over, winner, created_at}).
+-record(game, {game_id, players, battlefields, current_turn, waiting_player ,game_over, winner, created_at}).
 
 start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}) ->
   %% Initialize ETS table
@@ -23,6 +23,7 @@ start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}) ->
     players = #{player1 => Player1, player2 => Player2},
     battlefields = #{player1 => Battlefield1, player2 => Battlefield2},
     current_turn = player1,
+    waiting_player = player2,
     game_over = false,
     winner = none,
     created_at = erlang:system_time(second)  % Timestamp of creation in seconds.
@@ -51,6 +52,7 @@ init_ets() ->
 %%-------------------------------------------------------------------
 make_move(GameID, {Player, {Row, Col}}) ->
   PlayerAtom = binary_to_atom(Player, utf8),
+
   io:format("#######################################################################################~n"),
   io:format("~p ~n" , [PlayerAtom]),
   io:format("#######################################################################################~n"),
@@ -66,31 +68,46 @@ make_move(GameID, {Player, {Row, Col}}) ->
               io:format("OK: ~p battlefield found!~n"  , [PlayerAtom]),
               case GameState#game.game_over of
                 true ->
+                  % The game is already ended, so the other player won.
                   case GameState#game.winner of
-                    PlayerAtom -> {fin, winner};
+                    PlayerAtom ->
+                      {fin, winner};
                     _ -> game_state_manager:delete_game_state(GameID),
                       {fin, loser}
                   end;
                 false ->
-                  %% Update the battlefield with the move
-                  UpdatedBattlefield = update_battlefield(PlayerBattlefield, Row, Col),
+                  % The game is not over yet.
+                  case check_move_coordinates(Row, Col) of
+                    % Input check.
+                    {ok , _} ->
+                      %% Update the battlefield with the move
+                      UpdatedBattlefield = update_battlefield(PlayerBattlefield, Row, Col),
 
-                  %% Use update_game_state to update the GameState
-                  NewGameState = update_game_state(GameState, Player, UpdatedBattlefield),
+                      %% Use update_game_state to update the GameState
+                      NewGameState = update_game_state(GameState, Player, UpdatedBattlefield),
 
-                  %% Save the new game state
-                  game_state_manager:put_game_state(GameID, NewGameState),
+                      %% Save the new game state
+                      game_state_manager:put_game_state(GameID, NewGameState),
 
-                  io:format("REPORT: Match state [~p] -> # ~p # ~n", [NewGameState#game.game_over , NewGameState#game.winner]),
+                      io:format("REPORT: Match state [~p] -> # ~p # ~n", [NewGameState#game.game_over , NewGameState#game.winner]),
 
-                  case NewGameState#game.game_over of
-                    true ->
-                      case NewGameState#game.winner of
-                        PlayerAtom -> {fin, winner};
-                        _ -> game_state_manager:delete_game_state(GameID),
-                          {fin, loser}
+                      case NewGameState#game.game_over of
+                        % The game is ended.
+                        true ->
+                          case NewGameState#game.winner of
+                            PlayerAtom ->
+                              {fin, winner};
+                            _ ->
+                              game_state_manager:delete_game_state(GameID),
+                              {fin, loser}
+                          end;
+                        _ ->
+                          {ok, ok_move}
                       end;
-                    _ -> {ok, ok_move}
+                    {error , out_of_bounds} ->
+                      {error, out_of_bound_coordinates};
+                    {error, not_integer} ->
+                      {error, not_integer}
                   end
               end;
 
@@ -98,16 +115,52 @@ make_move(GameID, {Player, {Row, Col}}) ->
               io:format("ERROR: ~p battlefield not found!~n"  , [PlayerAtom]),
               {error, player_not_found}
           end;
-
-        _ ->
-          io:format("ERROR: ~p can't play yet!~n" , [PlayerAtom]),
-          {error, not_your_turn} %% It's not their turn.
+       _ ->
+          case GameState#game.waiting_player of
+            PlayerAtom ->
+              io:format("ERROR: ~p can't play yet!~n" , [PlayerAtom]),
+              {error, not_your_turn}; %% It's not their turn.
+            _ ->
+              {error, player_not_found}
+          end
       end;
-
     {error, not_found} ->
       io:format("ERROR: Can't find the match ~p~n", [GameID]),
       {error, game_not_found}
   end.
+
+%%%-------------------------------------------------------------------
+%%% @doc
+%%% Validates the move coordinates to ensure they are within the valid range.
+%%% Additionally, it checks that Row and Col are integers.
+%%% The battlefield dimension is retrieved dynamically using `get_battlefield_dimension/0`.
+%%%
+%%% @param Row The row index of the move (integer).
+%%% @param Col The column index of the move (integer).
+%%%
+%%% @returns {ok, proceed} if the move is valid.
+%%%          {error, invalid_input} if Row or Col is not an integer.
+%%%          {error, out_of_bounds} if the move is outside the allowed range.
+%%% @end
+%%%-------------------------------------------------------------------
+
+check_move_coordinates(Row, Col) ->
+  Dim = fleetfra_chin_configuration:get_battlefield_dimension(),
+
+  case {is_integer(Row), is_integer(Col)} of
+    {false, _} -> {error, not_integer};  %% Row is not an integer
+    {_, false} -> {error, not_integer};  %% Col is not an integer
+    {true, true} ->
+      if
+        Row < 0 orelse Row >= Dim orelse Col < 0 orelse Col >= Dim ->
+          %% If the row or column is outside the battlefield range, return an error.
+          {error, out_of_bounds};
+        true ->
+          %% If the move is valid, return a success tuple.
+          {ok, proceed}
+      end
+  end.
+
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -191,7 +244,7 @@ update_game_state(GameState, Player, NewBattlefield) ->
            end,
 
   %% Return the updated GameState
-  GameState#game{battlefields = NewBattlefields, current_turn = NewTurn, game_over = GameOver, winner = Winner, created_at = erlang:system_time(second)}.
+  GameState#game{battlefields = NewBattlefields, current_turn = NewTurn , waiting_player = PlayerAtom, game_over = GameOver, winner = Winner, created_at = erlang:system_time(second)}.
 
 %%-------------------------------------------------------------------
 %% @author SaveMos

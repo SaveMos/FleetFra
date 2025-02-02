@@ -49,8 +49,13 @@ start(_StartType, _StartArgs) ->
        end,
 
   % We first need to set what cowboy calls "route".
+  IpaddrBinary = list_to_binary(IP),
+
   Dispatch = cowboy_router:compile([
-    { list_to_binary(IP), [{<<"/">>, fleetfra_chin_handler, []}] } % Automatically use the eth0 IP
+    %{ IpaddrBinary, [{<<"/">>, fleetfra_chin_handler, []}] }, % For normal HTTP requests.
+    %{ IpaddrBinary, [{<<"/ws">>, alternative_handler, []}] }, % For WebSocket requests.
+    %{ '_', [{"/", fleetfra_chin_handler, []}] }, % For normal HTTP requests.
+    { '_', [{"/ws", alternative_handler, []}]} % For WebSocket.
   ]),
 
   % It's a mapping of the connection from some remote host's path to cowboy_handler.
