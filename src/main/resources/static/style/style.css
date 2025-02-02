@@ -321,6 +321,12 @@ h3 {
     margin-top: 60px;
     padding: 20px;
 }
+#emptyUser, #removeUser, #searchMatch{
+    margin-left: 20px;
+    color: #ff1e00;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
 table {
     width: 100%;
     border-collapse: collapse;

@@ -1,14 +1,4 @@
 let admin_logged = sessionStorage.getItem("userLog");
-// Sample Data
-const users = [
-    { name: "John", surname: "Doe", username: "johndoe", email: "john@example.com", gamesPlayed: 10, gamesWon: 6, gamesLost: 4 },
-    { name: "Jane", surname: "Smith", username: "janesmith", email: "jane@example.com", gamesPlayed: 12, gamesWon: 8, gamesLost: 4 }
-];
-
-const matches = [
-    { player1: "johndoe", player2: "janesmith", timestamp: "2024-12-01T15:00:00Z", winner: "johndoe" },
-    { player1: "janesmith", player2: "johndoe", timestamp: "2024-12-02T17:00:00Z", winner: "janesmith" }
-];
 
 const logoutGameButton = document.querySelector("#logoutButton");
 
@@ -39,38 +29,15 @@ function showPage(pageId) {
     });
 }
 
-// Search Users
 function searchUsers() {
-    const name = document.getElementById("search-name").value.toLowerCase();
-    const surname = document.getElementById("search-surname").value.toLowerCase();
-    const username = document.getElementById("search-username").value.toLowerCase();
-    const results = users.filter(user =>
-        user.name.toLowerCase().includes(name) &&
-        user.surname.toLowerCase().includes(surname) &&
-        user.username.toLowerCase().includes(username)
-    );
-    const table = document.getElementById("users-table");
-    table.innerHTML = results.map(user => `
-        <tr>
-          <td>${user.name}</td>
-          <td>${user.surname}</td>
-          <td>${user.username}</td>
-          <td>${user.email}</td>
-          <td>${user.gamesPlayed}</td>
-          <td>${user.gamesWon}</td>
-          <td>${user.gamesLost}</td>
-        </tr>`).join("");
-}
-
-function searchUsers1() {
     const name = document.getElementById("search-name").value.toLowerCase();
     const surname = document.getElementById("search-surname").value.toLowerCase();
     const username = document.getElementById("search-username").value.toLowerCase();
 
     let requestAdmin = {};
-    if (name) requestAdmin.firstName = name;
-    if (surname) requestAdmin.lastName = surname;
-    if (username) requestAdmin.username = username;
+    requestAdmin.firstName = name;
+    requestAdmin.lastName = surname;
+    requestAdmin.username = username;
 
     $.ajax({
         url : "http://10.2.1.26:5050/viewDetailedUsers",
@@ -79,20 +46,28 @@ function searchUsers1() {
         dataType: "json",
         contentType: 'application/json',
         success: function (response) {
-            if (response && Array.isArray(response.content) && response.content.length > 0) {
-                const table = document.getElementById("users-table");
-                table.innerHTML = response.content.map(user => `
+            const table = document.getElementById("users-table");
+
+            if (response && Array.isArray(response) && response.length > 0) {
+                table.innerHTML = response.map(user => `
                 <tr>
-                  <td>${user.name}</td>
-                  <td>${user.surname}</td>
+                  <td>${user.firstName}</td>
+                  <td>${user.lastName}</td>
                   <td>${user.username}</td>
                   <td>${user.email}</td>
-                  <td>${user.gamesPlayed}</td>
-                  <td>${user.gamesWon}</td>
-                  <td>${user.gamesLost}</td>
+                  <td>${user.playedGames}</td>
+                  <td>${user.winGames}</td>
+                  <td>${user.lostGames}</td>
                 </tr>`).join("");
+
+                if ( document.getElementById("emptyUser").innerText.trim() !== "") {
+                    document.getElementById("emptyUser").innerText = "";
+                }
+
             }else{
-                alert("User not found");
+                table.innerHTML = "";
+                document.getElementById("emptyUser").innerText = "User not found";
+                //alert("User not found");
             }
         },
         error: function(xhr) {
@@ -101,35 +76,15 @@ function searchUsers1() {
     })
 }
 
-// Search Removable Users
 function searchRemovableUsers() {
     const name = document.getElementById("remove-name").value.toLowerCase();
     const surname = document.getElementById("remove-surname").value.toLowerCase();
     const username = document.getElementById("remove-username").value.toLowerCase();
-    const results = users.filter(user =>
-        user.name.toLowerCase().includes(name) &&
-        user.surname.toLowerCase().includes(surname) &&
-        user.username.toLowerCase().includes(username)
-    );
-    const table = document.getElementById("remove-users-table");
-    table.innerHTML = results.map(user => `
-        <tr>
-          <td>${user.name}</td>
-          <td>${user.surname}</td>
-          <td>${user.username}</td>
-          <td><button class="removeButton" onclick="removeUser('${user.username}')">Remove</button></td>
-        </tr>`).join("");
-}
-
-function searchRemovableUsers1() {
-    const name = document.getElementById("search-name").value.toLowerCase();
-    const surname = document.getElementById("search-surname").value.toLowerCase();
-    const username = document.getElementById("search-username").value.toLowerCase();
 
     let requestAdmin = {};
-    if (name) requestAdmin.firstName = name;
-    if (surname) requestAdmin.lastName = surname;
-    if (username) requestAdmin.username = username;
+    requestAdmin.firstName = name;
+    requestAdmin.lastName = surname;
+    requestAdmin.username = username;
 
     $.ajax({
         url : "http://10.2.1.26:5050/viewUsers",
@@ -138,17 +93,22 @@ function searchRemovableUsers1() {
         dataType: "json",
         contentType: 'application/json',
         success: function (response) {
-            if (response && Array.isArray(response.content) && response.content.length > 0) {
-                const table = document.getElementById("users-table");
-                table.innerHTML = response.content.map(user => `
+            const table = document.getElementById("remove-users-table");
+            if (response && Array.isArray(response) && response.length > 0) {
+                table.innerHTML = response.map(user => `
                 <tr id="user-${user.username}">
-                  <td>${user.name}</td>
-                  <td>${user.surname}</td>
+                  <td>${user.firstName}</td>
+                  <td>${user.lastName}</td>
                   <td>${user.username}</td>
                   <td><button class="removeButton" onclick="removeUser('${user.username}')">Remove</button></td>
                 </tr>`).join("");
+
+                if ( document.getElementById("removeUser").innerText.trim() !== "") {
+                    document.getElementById("removeUser").innerText = "";
+                }
             }else{
-                alert("User not found");
+                table.innerHTML = "";
+                document.getElementById("removeUser").innerText = "User not found";
             }
         },
         error: function(xhr) {
@@ -179,31 +139,22 @@ function removeUser(username) {
     });
 }
 
-// Filter Matches
 function filterMatches() {
-    const startDate = new Date(document.getElementById("start-date").value);
-    const endDate = new Date(document.getElementById("end-date").value);
-    const results = matches.filter(match => {
-        const matchDate = new Date(match.timestamp);
-        return matchDate >= startDate && matchDate <= endDate;
-    });
-    const table = document.getElementById("matches-table");
-    table.innerHTML = results.map(match => `
-        <tr>
-          <td>${match.player1}</td>
-          <td>${match.player2}</td>
-          <td>${match.timestamp}</td>
-          <td>${match.winner}</td>
-        </tr>`).join("");
-}
-
-function filterMatches1() {
     const startDate = new Date(document.getElementById("start-date").value);
     const endDate = new Date(document.getElementById("end-date").value);
     //Dates read are in the format YYYY-MM-DD, the database contains data in the format 2024-12-02T17:00:00Z
     let requestAdmin = {};
-    if (startDate) requestAdmin.start = startDate;
-    if (endDate) requestAdmin.end = endDate;
+    if ((!startDate || isNaN(startDate.getTime()))){
+        requestAdmin.date1 = startDate;
+
+    }else{
+        requestAdmin.date1 = startDate.toISOString().split("T")[0];
+    }
+    if ((!endDate || isNaN(endDate.getTime()))) {
+        requestAdmin.date2 = endDate;
+    }else{
+        requestAdmin.date2 = endDate.toISOString().split("T")[0]
+    }
 
     $.ajax({
         url : "http://10.2.1.26:5050/browseGamesAdmin",
@@ -212,18 +163,23 @@ function filterMatches1() {
         dataType: "json",
         contentType: 'application/json',
         success: function (response) {
-            if (response && Array.isArray(response.content) && response.content.length > 0) {
-                const table = document.getElementById("matches-table");
-                table.innerHTML = response.content.map(match => `
+            const table = document.getElementById("matches-table");
+            if (response && Array.isArray(response) && response.length > 0) {
+                table.innerHTML = response.map(match => `
                 <tr>
-                  <td>${match.player1}</td>
-                  <td>${match.player2}</td>
+                  <td>${match.user1}</td>
+                  <td>${match.user2}</td>
                   <td>${match.timestamp}</td>
                   <td>${match.winner}</td>
                 </tr>`).join("");
 
+                if ( document.getElementById("searchMatch").innerText.trim() !== "") {
+                    document.getElementById("searchMatch").innerText = "";
+                }
+
             }else{
-                alert("Match not found");
+                table.innerHTML = "";
+                document.getElementById("searchMatch").innerText = "Match not found";
             }
         },
         error: function(xhr) {

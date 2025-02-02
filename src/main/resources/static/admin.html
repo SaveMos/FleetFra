@@ -31,6 +31,7 @@
             <label for="search-surname"></label><input type="text" id="search-surname" class="adminInput" placeholder="Surname">
             <label for="search-username"></label><input type="text" id="search-username" class="adminInput" placeholder="Username">
             <button class="adminButton" onclick="searchUsers()">Search</button>
+            <span id="emptyUser"></span>
         </div>
         <table>
             <thead>
@@ -56,6 +57,7 @@
             <label for="remove-surname"></label><input type="text" id="remove-surname" class="adminInput" placeholder="Surname">
             <label for="remove-username"></label><input type="text" id="remove-username" class="adminInput" placeholder="Username">
             <button class="adminButton" onclick="searchRemovableUsers()">Search</button>
+            <span id="removeUser"></span>
         </div>
         <table>
             <thead>
@@ -77,6 +79,7 @@
             <label for="start-date"></label><input type="date" id="start-date" class="adminInput" >
             <label for="end-date"></label><input type="date" id="end-date" class="adminInput" >
             <button class="adminButton" onclick="filterMatches()">Filter</button>
+            <span id="searchMatch"></span>
         </div>
         <table>
             <thead>
