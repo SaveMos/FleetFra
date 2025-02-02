@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import it.unipi.dsmt.CaveDowny.util.SessionManagement;
 
+import java.util.List;
+
 //this class manages http requests and every response is a json object
 @RestController
 //this annotation is used to store the user logged in the session
@@ -93,10 +95,10 @@ public class GenericController implements GenericControllerInterface {
         ObjectMapper objectMapper = new ObjectMapper();
 
         //get the list of games played by the user
-        PageDTO<MatchDTO> pageDTO = matchDAO.browseGames(username);
+        List<MatchDTO> list = matchDAO.browseGames("data1", "data2");
 
         try {
-            String jsonResult = objectMapper.writeValueAsString(pageDTO);
+            String jsonResult = objectMapper.writeValueAsString(list);
             return new ResponseEntity<>(jsonResult, HttpStatus.OK);
 
         } catch (JsonProcessingException e) {

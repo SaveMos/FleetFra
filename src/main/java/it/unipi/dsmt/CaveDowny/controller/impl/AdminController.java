@@ -26,7 +26,7 @@ public class AdminController implements AdminControllerInterface {
     @Override
     public ResponseEntity<String> viewUsers(@RequestBody ViewUsersRequestDTO request) {
         //pageDTO contains the list of users to be displayed
-        List<UserDTO> list = userDAO.viewUsers(request);
+        List<UserDTO> list = userDAO.viewUsers(request, true);
         //ObjectMapper is used to convert the pageDTO object into a JSON object
         ObjectMapper objectMapper = new ObjectMapper();
 
@@ -42,7 +42,7 @@ public class AdminController implements AdminControllerInterface {
     }
 
     //endpoint API for user removal
-    @PostMapping("/viewUsers")
+    @PostMapping("/removeUser")
     @Override
     public ResponseEntity<String> removeUser(@RequestBody String username) {
         if(!userDAO.removeUser(username)){
@@ -52,21 +52,41 @@ public class AdminController implements AdminControllerInterface {
         return new ResponseEntity<>("User '"+username+"' removed", HttpStatus.OK);
     }
 
+    //endpoint API for user removal
+    @PostMapping("/viewUsers")
+    @Override
+    public ResponseEntity<String> viewRemoveUser(@RequestBody ViewUsersRequestDTO request) {
+        //pageDTO contains the list of users to be displayed
+        List<UserDTO> list = userDAO.viewUsers(request, false);
+        //ObjectMapper is used to convert the pageDTO object into a JSON object
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            String jsonResult = objectMapper.writeValueAsString(list);
+            //return HTTP response with JSON object with Code 200
+            return new ResponseEntity<>(jsonResult, HttpStatus.OK);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>("Error during JSON serialization", HttpStatus.BAD_REQUEST);
+        }
+    }
+
     //endpoint API for game visualization
     @PostMapping("/browseGamesAdmin")
     @Override
     // return a list of games
-    public ResponseEntity<String> browseGames() {
+    public ResponseEntity<String> browseGames( @RequestBody DateDTO request) {
         //DAO object for database match interaction
         MatchDAO matchDAO = new MatchDAO();
-        //ObjectMapper is used to convert the pageDTO object into a JSON object
         ObjectMapper objectMapper = new ObjectMapper();
 
         //pageDTO contains the list of games to be displayed
-        PageDTO<MatchDTO> pageDTO = matchDAO.browseGames(null);
+        List<MatchDTO> list = matchDAO.browseGames(request.getDate1(), request.getDate2());
 
         try {
-            String jsonResult = objectMapper.writeValueAsString(pageDTO);
+            String jsonResult = objectMapper.writeValueAsString(list);
+            System.out.println(jsonResult);
             //return HTTP response with JSON object with Code 200
             return new ResponseEntity<>(jsonResult, HttpStatus.OK);
 

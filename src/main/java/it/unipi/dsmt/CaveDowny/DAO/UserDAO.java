@@ -1,7 +1,7 @@
 package it.unipi.dsmt.CaveDowny.DAO;
 
 import it.unipi.dsmt.CaveDowny.DTO.*;
-import org.apache.catalina.User;
+
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -114,9 +114,9 @@ public class UserDAO extends BaseDAO {
 
     // DAO method for viewing users: it returns a PageDTO object containing a list of UserDTO objects
     // and the number of users in the list
-    public List<UserDTO> viewUsers(ViewUsersRequestDTO request) {
+    public List<UserDTO> viewUsers(ViewUsersRequestDTO request, boolean includeStats) {
             List<UserDTO> entries = new ArrayList<>();
-            String baseQuery = "SELECT Username, Name, Surname FROM FleetFra.user";
+            String baseQuery = "SELECT Username, Surname, Name, Email FROM FleetFra.user";
 
             List<String> conditions = new ArrayList<>();
             List<Object> parameters = new ArrayList<>();
@@ -138,7 +138,7 @@ public class UserDAO extends BaseDAO {
             if (!conditions.isEmpty()) {
                 finalQuery += " WHERE " + String.join(" AND ", conditions);
             }
-
+            //ResultSet resultSet = null;
             try (Connection connection = getConnection();
                  PreparedStatement preparedStatement = connection.prepareStatement(finalQuery)) {
 
@@ -152,17 +152,17 @@ public class UserDAO extends BaseDAO {
                     userDTO.setUsername(resultSet.getString("Username"));
                     userDTO.setFirstName(resultSet.getString("Name"));
                     userDTO.setLastName(resultSet.getString("Surname"));
-
-                    // Calcola statistiche per il singolo utente
-                    calculateUserStats(connection, userDTO);
-
+                    userDTO.setEmail(resultSet.getString("Email"));
+                    if(includeStats) {
+                        calculateUserStats(connection, userDTO);
+                    }
                     entries.add(userDTO);
+
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
                 return null;
             }
-
             return entries;
         }
 

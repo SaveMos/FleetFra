@@ -6,13 +6,13 @@ public class MatchDTO {
     private int id;
     private String user1;
     private String user2;
-    private Timestamp timestamp;
-    private int winner;
+    private String timestamp;
+    private String winner;
 
 
     public MatchDTO(){}
 
-    public MatchDTO(int id, String user1, String user2, Timestamp timestamp, int winner) {
+    public MatchDTO(int id, String user1, String user2, String timestamp, String winner) {
         this.id = id;
         this.user1 = user1;
         this.user2 = user2;
@@ -20,7 +20,7 @@ public class MatchDTO {
         this.winner= winner;
     }
 
-    public MatchDTO(String user1, String user2, Timestamp timestamp, int winner) {
+    public MatchDTO(String user1, String user2, String timestamp, String winner) {
         this.user1 = user1;
         this.user2 = user2;
         this.timestamp = timestamp;
@@ -53,19 +53,19 @@ public class MatchDTO {
     }
 
 
-    public Timestamp getTimestamp() {
+    public String getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Timestamp timestamp) {
+    public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
     }
 
-    public int getWinner() {
+    public String getWinner() {
         return winner;
     }
 
-    public void setWinner(int winner) {
+    public void setWinner(String winner) {
         this.winner= winner;
     }
 }
