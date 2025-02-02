@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import it.unipi.dsmt.CaveDowny.DTO.*;
 
+import java.util.List;
+
 
 //this class manages http requests and every response is a json object
 @RestController
@@ -20,17 +22,16 @@ public class AdminController implements AdminControllerInterface {
     private UserDAO userDAO = new UserDAO();
 
     //endpoint API for user visualization
-    @PostMapping("/viewUsers")
+    @PostMapping("/viewDetailedUsers")
     @Override
-    //PAGINAZIONE DA IMPLEMENTARE
     public ResponseEntity<String> viewUsers(@RequestBody ViewUsersRequestDTO request) {
         //pageDTO contains the list of users to be displayed
-        PageDTO<UserDTO> pageDTO = userDAO.viewUsers();
+        List<UserDTO> list = userDAO.viewUsers(request);
         //ObjectMapper is used to convert the pageDTO object into a JSON object
         ObjectMapper objectMapper = new ObjectMapper();
 
         try {
-            String jsonResult = objectMapper.writeValueAsString(pageDTO);
+            String jsonResult = objectMapper.writeValueAsString(list);
             //return HTTP response with JSON object with Code 200
             return new ResponseEntity<>(jsonResult, HttpStatus.OK);
 
@@ -41,7 +42,7 @@ public class AdminController implements AdminControllerInterface {
     }
 
     //endpoint API for user removal
-    @PostMapping("/removeUser")
+    @PostMapping("/viewUsers")
     @Override
     public ResponseEntity<String> removeUser(@RequestBody String username) {
         if(!userDAO.removeUser(username)){

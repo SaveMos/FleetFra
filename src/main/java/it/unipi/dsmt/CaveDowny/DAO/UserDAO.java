@@ -1,6 +1,7 @@
 package it.unipi.dsmt.CaveDowny.DAO;
 
 import it.unipi.dsmt.CaveDowny.DTO.*;
+import org.apache.catalina.User;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -113,36 +114,81 @@ public class UserDAO extends BaseDAO {
 
     // DAO method for viewing users: it returns a PageDTO object containing a list of UserDTO objects
     // and the number of users in the list
-    public PageDTO<UserDTO> viewUsers() {
-        // Create a new PageDTO object to be returned
-        PageDTO<UserDTO> pageDTO = new PageDTO<>();
-        List<UserDTO> entries = new ArrayList<>();
-        // SQL query to retrieve all users from the database
-        String browseUsersSQL = "SELECT Username, Name, Surname FROM FleetFra.user";
+    public List<UserDTO> viewUsers(ViewUsersRequestDTO request) {
+            List<UserDTO> entries = new ArrayList<>();
+            String baseQuery = "SELECT Username, Name, Surname FROM FleetFra.user";
 
-        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(browseUsersSQL)) {
+            List<String> conditions = new ArrayList<>();
+            List<Object> parameters = new ArrayList<>();
 
-            ResultSet resultSet = preparedStatement.executeQuery();
-            // Iterate over the result set and create a new UserDTO object for each user
-            while (resultSet.next()) {
-                UserDTO userDTO = new UserDTO();
-                userDTO.setUsername(resultSet.getString("Username"));
-                userDTO.setFirstName(resultSet.getString("Name"));
-                userDTO.setLastName(resultSet.getString("Surname"));
-                entries.add(userDTO);
+            if (request.getUsername() != null && !request.getUsername().isEmpty()) {
+                conditions.add("Username LIKE ?");
+                parameters.add(request.getUsername() + "%");  // Cerca valori che iniziano con il valore fornito
+            }
+            if (request.getFirstName() != null && !request.getFirstName().isEmpty()) {
+                conditions.add("Name LIKE ?");
+                parameters.add(request.getFirstName() + "%");
+            }
+            if (request.getLastName() != null && !request.getLastName().isEmpty()) {
+                conditions.add("Surname LIKE ?");
+                parameters.add(request.getLastName() + "%");
             }
 
-            // Set the list of users and the number of users in the PageDTO object
-            pageDTO.setEntries(entries);
-            pageDTO.setCounter(entries.size());
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return null;
+            String finalQuery = baseQuery;
+            if (!conditions.isEmpty()) {
+                finalQuery += " WHERE " + String.join(" AND ", conditions);
+            }
+
+            try (Connection connection = getConnection();
+                 PreparedStatement preparedStatement = connection.prepareStatement(finalQuery)) {
+
+                for (int i = 0; i < parameters.size(); i++) {
+                    preparedStatement.setObject(i + 1, parameters.get(i));
+                }
+
+                ResultSet resultSet = preparedStatement.executeQuery();
+                while (resultSet.next()) {
+                    UserDTO userDTO = new UserDTO();
+                    userDTO.setUsername(resultSet.getString("Username"));
+                    userDTO.setFirstName(resultSet.getString("Name"));
+                    userDTO.setLastName(resultSet.getString("Surname"));
+
+                    // Calcola statistiche per il singolo utente
+                    calculateUserStats(connection, userDTO);
+
+                    entries.add(userDTO);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return null;
+            }
+
+            return entries;
         }
 
-        return pageDTO;
-    }
+        private void calculateUserStats (Connection conn, UserDTO user){
+            String matchQuery = "SELECT COUNT(*) AS playedGames, " +
+                    "SUM(CASE WHEN (User1 = ? AND Winner = 1) OR (User2 = ? AND Winner = 0) THEN 1 ELSE 0 END) AS winGames, " +
+                    "SUM(CASE WHEN (User1 = ? AND Winner = 0) OR (User2 = ? AND Winner = 1) THEN 1 ELSE 0 END) AS lostGames " +
+                    "FROM FleetFra.match " +
+                    "WHERE User1 = ? OR User2 = ?";
 
+            try (PreparedStatement stmt = conn.prepareStatement(matchQuery)) {
+                for (int i = 1; i <= 6; i++) {
+                    stmt.setString(i, user.getUsername());
+                }
 
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    user.setPlayedGames(rs.getInt("playedGames"));
+                    user.setWinGames(rs.getInt("winGames"));
+                    user.setLostGames(rs.getInt("lostGames"));
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
 }
+
+
 

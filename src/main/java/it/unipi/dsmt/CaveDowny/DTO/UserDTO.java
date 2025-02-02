@@ -10,6 +10,9 @@ public class UserDTO {
     private String username;
     private String password;
     private String email;
+    private int playedGames;
+    private int lostGames;
+    private int winGames;
 
     public UserDTO(){}
 
@@ -51,5 +54,23 @@ public class UserDTO {
     }
     public void setEmail(String email) {
         this.email = email;
+    }
+    public int getPlayedGames() {
+        return playedGames;
+    }
+    public void setPlayedGames(int playedGames) {
+        this.playedGames = playedGames;
+    }
+    public int getLostGames() {
+        return lostGames;
+    }
+    public void setLostGames(int lostGames) {
+        this.lostGames = lostGames;
+    }
+    public int getWinGames() {
+        return winGames;
+    }
+    public void setWinGames(int winGames) {
+        this.winGames = winGames;
     }
 }
