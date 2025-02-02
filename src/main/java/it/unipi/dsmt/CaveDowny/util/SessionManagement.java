@@ -32,7 +32,7 @@ public class SessionManagement {
     //check if the user is logged and return true if it is
     public boolean isUserLogged(String Username) {
         if(session == null) {
-            throw new RuntimeException("Session is not active.");
+            return false;
         } else {
             return userLogged.contains(Username);
         }

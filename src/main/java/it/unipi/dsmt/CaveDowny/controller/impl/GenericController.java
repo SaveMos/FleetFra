@@ -30,6 +30,10 @@ public class GenericController implements GenericControllerInterface {
     public ResponseEntity<ResponseRequest> login(@RequestBody UserAccessRequest requestUser) {
         //get the session
         session = SessionManagement.getInstance();
+        if(session.isUserLogged(requestUser.getUsername()))
+            return new ResponseEntity<>(new ResponseRequest("User already logged"), HttpStatus.FORBIDDEN);
+
+        System.out.println("Login request received: " + requestUser.getUsername() + " " + requestUser.getPassword());
         ResponseRequest responsereq;
 
         try {
@@ -37,6 +41,7 @@ public class GenericController implements GenericControllerInterface {
             UserDTO user = userDao.login(requestUser.getUsername(), requestUser.getPassword());
             if (user == null) {
                 responsereq = new ResponseRequest("Wrong Username or Password inserted");
+                System.out.println("Login failed");
                 return new ResponseEntity<>(responsereq, HttpStatus.BAD_REQUEST);
             }
 

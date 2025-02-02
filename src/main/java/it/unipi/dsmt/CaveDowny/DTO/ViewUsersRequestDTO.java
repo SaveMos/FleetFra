@@ -1,14 +1,16 @@
 package it.unipi.dsmt.CaveDowny.DTO;
 
 public class ViewUsersRequestDTO {
+    private String firstName;
+    private String lastName;
     private String username;
-    private int page;
 
     public ViewUsersRequestDTO(){}
 
-    public ViewUsersRequestDTO(String username, int page) {
+    public ViewUsersRequestDTO(String firstName, String lastName, String username ) {
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.username = username;
-        this.page = page;
     }
 
     public String getUsername() {
@@ -19,11 +21,16 @@ public class ViewUsersRequestDTO {
         this.username = username;
     }
 
-    public int getPage() {
-        return page;
+    public String getFirstName() {
+        return firstName;
     }
-
-    public void setPage(int page) {
-        this.page = page;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+    public String getLastName() {
+        return lastName;
+    }
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 }
