@@ -1,7 +1,7 @@
 -module(fleetfra_chin_handler).
 -behaviour(cowboy_handler).
 -author("SaveMos").
--export([init/2]).
+-export([init/2 , process_request/1 , parse_json/1 , build_response/1]).
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -14,57 +14,51 @@
 %% @return {ok, Req2, State} The updated request and state.
 %%-------------------------------------------------------------------
 init(Req, State) ->
-    %io:format("REPORT: request received!~n"),
-    %% Parse JSON body
+    io:format("SYSTEM: Normal HTTP message received!~n"),
     {ok, Body, Req1} = cowboy_req:read_body(Req),
-
-    %% Decode JSON and extract the game ID and request type
     ParsedJson = parse_json(Body),
+    Response = process_request(ParsedJson),
+    Req2 = cowboy_req:reply(200, #{<<"content-type">> => <<"application/json">>}, Response, Req1),
+    {ok, Req2, State}.
 
+%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc
+%% Processes the request, which is a JSON object representing a game action.
+%% @param ParsedJson The parsed JSON request.
+%% @return A JSON-encoded response.
+%%-------------------------------------------------------------------
+process_request(ParsedJson) ->
     GameID = maps:get(<<"game_id">>, ParsedJson),
     TypeRequest = maps:get(<<"type_request">>, ParsedJson),
-
-    %% Handle the request based on its type
     case TypeRequest of
         <<"start_game">> ->
-            %io:format("start-game request received!~n"),
             Player1 = maps:get(<<"player1">>, ParsedJson),
             Player2 = maps:get(<<"player2">>, ParsedJson),
             Battlefield1 = maps:get(<<"player1_battlefield">>, ParsedJson),
             Battlefield2 = maps:get(<<"player2_battlefield">>, ParsedJson),
-            %% Start the game with the provided battlefields
             fleetfra_game:start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}),
-            %io:format("Battlefield1: ~p~n", [Battlefield1]),
-            %io:format("Battlefield2: ~p~n", [Battlefield2]),
-            Response = build_response(<<"OK: Game started">>);
+            build_response(<<"OK: Game started">>);
 
         <<"make_move">> ->
-            %io:format("move request received!~n"),
-            Player =  maps:get(<<"player">>, ParsedJson),
+            Player = maps:get(<<"player">>, ParsedJson),
             Move = maps:get(<<"move">>, ParsedJson),
             Row = maps:get(<<"row">>, Move),
             Col = maps:get(<<"col">>, Move),
-            %% Make the move
             case fleetfra_game:make_move(GameID, {Player, {Row, Col}}) of
-                {ok, _} -> Response = build_response(<<"OK: Move accepted">>);
-                {error, invalid_move} -> Response = build_response(<<"Invalid move">>);
-                {error, out_of_bound_coordinates} -> Response = build_response(<<"INVALID MOVE: Out of bound coordinates">>);
-                {error, not_integer} -> Response = build_response(<<"INVALID MOVE: Coordinates must be integers">>);
-                {error, not_your_turn} -> Response = build_response(<<"TURN ERROR: Not your turn">>);
-                {error, player_not_found} -> Response = build_response(<<"ERROR: Player not found">>);
-                {error, game_not_found} -> Response = build_response(<<"ERROR: Game not found">>);
-                {fin, winner} -> Response = build_response(<<"VICTORY">>);
-                {fin, loser} -> Response = build_response(<<"DEFEAT">>)
-            % {"message":"Move accepted"}
-            % {"message":"VICTORY"}
+                {ok, _} -> build_response(<<"OK: Move accepted">>);
+                {error, invalid_move} -> build_response(<<"Invalid move">>);
+                {error, out_of_bound_coordinates} -> build_response(<<"INVALID MOVE: Out of bound coordinates">>);
+                {error, not_integer} -> build_response(<<"INVALID MOVE: Coordinates must be integers">>);
+                {error, not_your_turn} -> build_response(<<"TURN ERROR: Not your turn">>);
+                {error, player_not_found} -> build_response(<<"ERROR: Player not found">>);
+                {error, game_not_found} -> build_response(<<"ERROR: Game not found">>);
+                {fin, winner} -> build_response(<<"VICTORY">>);
+                {fin, loser} -> build_response(<<"DEFEAT">>)
             end;
-
-        _ ->
-            Response = build_response(<<"Unknown request type">>)
-    end,
-
-    Req2 = cowboy_req:reply(200, #{<<"content-type">> => <<"application/json">>}, Response, Req1),
-    {ok, Req2, State}.
+        _ -> build_response(<<"Unknown request type">>)
+    end.
 
 %%-------------------------------------------------------------------
 %% @author SaveMos

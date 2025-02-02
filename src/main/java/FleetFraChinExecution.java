@@ -133,9 +133,23 @@ public class FleetFraChinExecution {
                 .forEach(cell -> cell.put("value", value));
     }
 
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    public static String generateRandomString(int length) {
+        Random random = new Random();
+        StringBuilder result = new StringBuilder();
+
+        for (int i = 0; i < length; i++) {
+            int randomIndex = random.nextInt(CHARACTERS.length()); // Scegli un indice casuale
+            result.append(CHARACTERS.charAt(randomIndex)); // Aggiungi il carattere casuale alla stringa
+        }
+
+        return result.toString();
+    }
+
     public static void main(String[] args) {
         try {
-            String gameID = "game123";
+            String gameID = generateRandomString(20);
             String player1FinalState = "";
             String player2FinalState = "";
             String player1ID = "player1";
@@ -143,60 +157,12 @@ public class FleetFraChinExecution {
             String currentPlayer;
             String requestJson, responseJson;
 
-            // NOT STARTED YET TEST
-            requestJson = createMakeMoveRequest(gameID, player1ID, 0, 0);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"ERROR: Game not found\"}");
 
             // STARTING GAME TEST
             requestJson = createStartGameRequest(gameID, player1ID, player2ID);
             responseJson = sendPostRequest(SERVER_URL , requestJson);
-            assert responseJson.equals("{\"message\":\"OK: Game started\"}");
+            System.out.println("Server Response: " + responseJson);
 
-            // INVALID MOVE TESTS
-            requestJson = createMakeMoveRequest(gameID, player1ID, 0, -1);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
-
-            requestJson = createMakeMoveRequest(gameID, player1ID, 11, 0);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
-
-            requestJson = createMakeMoveRequest(gameID, player1ID, -1, 0);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
-
-            requestJson = createMakeMoveRequest(gameID, player1ID, 0, 10);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
-
-            requestJson = createMakeMoveRequest(gameID, player1ID, 10, 10);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
-
-            requestJson = createMakeMoveRequest(gameID, player1ID, -1, -1);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"INVALID MOVE: Out of bound coordinates\"}");
-
-            // VALID MOVE TEST
-            requestJson = createMakeMoveRequest(gameID, player1ID, 0, 0);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"OK: Move accepted\"}");
-
-            // TURN ERROR TEST
-            requestJson = createMakeMoveRequest(gameID, player1ID, 1, 1);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"TURN ERROR: Not your turn\"}");
-
-            // INVALID PLAYER TEST
-            requestJson = createMakeMoveRequest(gameID, "fake_player", 1, 1);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"ERROR: Player not found\"}");
-
-            // INVALID GAME TEST
-            requestJson = createMakeMoveRequest("fake_game", player1ID, 1, 1);
-            responseJson = sendPostRequest(SERVER_URL, requestJson);
-            assert responseJson.equals("{\"message\":\"ERROR: Game not found\"}");
 
             // SIMULATED MATCH TEST
             // Game loop: alternate turns
@@ -236,11 +202,7 @@ public class FleetFraChinExecution {
 
                 requestJson = createMakeMoveRequest(gameID, currentPlayer, row, col);
                 responseJson = sendPostRequest(SERVER_URL, requestJson);
-                assert (responseJson.equals("{\"message\":\"OK: Move accepted\"}") ||
-                        responseJson.equals("{\"message\":\"VICTORY\"}") ||
-                        responseJson.equals("{\"message\":\"DEFEAT\"}") ||
-                        responseJson.equals("{\"message\":\"ERROR: Game not found\"}")
-                        );
+                System.out.println("Server Response for " + currentPlayer+": " + responseJson);
 
                 if(responseJson.equals("{\"message\":\"ERROR: Game not found\"}")) {
                     break;  // If the game is not found, exit the loop.

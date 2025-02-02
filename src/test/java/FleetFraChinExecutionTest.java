@@ -6,17 +6,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Random;
-
 
 @SpringBootTest(classes = FleetFraChinExecution.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 
 public class FleetFraChinExecutionTest {
-
-
-    private static final String GAME_ID = generateRandomString(20);
-
+    private static final String GAME_ID = FleetFraChinExecution.generateRandomString(20);
     private static final String PLAYER1_ID = "player1";
     private static final String PLAYER2_ID = "player2";
     private static final String SERVER_URL = "http://10.2.1.30:8080";
@@ -24,12 +19,12 @@ public class FleetFraChinExecutionTest {
     @Test
     @Order(1)
     void testStartGame() throws Exception {
-        String moveJson = FleetFraChinExecution.createMakeMoveRequest(GAME_ID, PLAYER1_ID, 0, 0);
-        String responseJson =  FleetFraChinExecution.sendPostRequest(SERVER_URL, moveJson);
+        String requestJson = FleetFraChinExecution.createMakeMoveRequest(GAME_ID, PLAYER1_ID, 0, 0);
+        String responseJson =  FleetFraChinExecution.sendPostRequest(SERVER_URL, requestJson);
         assertNotNull(responseJson);
         assertEquals("{\"message\":\"ERROR: Game not found\"}", responseJson);
 
-        String requestJson = FleetFraChinExecution.createStartGameRequest(GAME_ID, PLAYER1_ID, PLAYER2_ID);
+        requestJson = FleetFraChinExecution.createStartGameRequest(GAME_ID, PLAYER1_ID, PLAYER2_ID);
         responseJson =  FleetFraChinExecution.sendPostRequest(SERVER_URL, requestJson);
         assertNotNull(responseJson);
         assertEquals(responseJson, "{\"message\":\"OK: Game started\"}");
@@ -125,17 +120,5 @@ public class FleetFraChinExecutionTest {
         assertEquals("{\"message\":\"ERROR: Game not found\"}", responseJson);
     }
 
-    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    public static String generateRandomString(int length) {
-        Random random = new Random();
-        StringBuilder result = new StringBuilder();
-
-        for (int i = 0; i < length; i++) {
-            int randomIndex = random.nextInt(CHARACTERS.length()); // Scegli un indice casuale
-            result.append(CHARACTERS.charAt(randomIndex)); // Aggiungi il carattere casuale alla stringa
-        }
-
-        return result.toString();
-    }
 }
