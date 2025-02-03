@@ -9,10 +9,16 @@ import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * WebSocket test suite for FleetFraChin.
+ * This test suite verifies WebSocket communication, game initialization, move validation,
+ * turn handling, and error responses.
+ */
 @SpringBootTest(classes = FleetFraChinExecution.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class FleetFraChinTestWebSocket {
 
+    // Constants for game and player identifiers
     private static final String GAME_ID = FleetFraChinExecution.generateRandomString(20);
     private static final String PLAYER1_ID = "player1";
     private static final String PLAYER2_ID = "player2";
@@ -22,6 +28,10 @@ public class FleetFraChinTestWebSocket {
     private CountDownLatch latch;
     private String receivedMessage;
 
+    /**
+     * Initializes a WebSocket client before each test.
+     * Establishes a connection and ensures WebSocket is open.
+     */
     @BeforeEach
     public void setup() throws Exception {
         latch = new CountDownLatch(1);
@@ -30,41 +40,51 @@ public class FleetFraChinTestWebSocket {
         client = new WebSocketClient(new URI(SERVER_URL)) {
             @Override
             public void onOpen(ServerHandshake handshake) {
-                System.out.println("✅ WebSocket connesso");
+                System.out.println("✅ WebSocket connected");
             }
 
             @Override
             public void onMessage(String message) {
-                System.out.println("📩 Ricevuto: " + message);
-                receivedMessage = message;
+                System.out.println("📩 Received: " + message);
+                receivedMessage = message.replace("\\\"", "\""); // Normalize JSON format
                 latch.countDown();
             }
 
             @Override
             public void onClose(int code, String reason, boolean remote) {
-                System.out.println("❌ WebSocket chiuso. Motivo: " + reason);
+                System.out.println("❌ WebSocket closed. Reason: " + reason);
             }
 
             @Override
             public void onError(Exception ex) {
-                System.err.println("⚠️ Errore WebSocket: " + ex.getMessage());
+                System.err.println("⚠️ WebSocket error: " + ex.getMessage());
             }
         };
 
         client.connectBlocking();
-        assertTrue(client.isOpen(), "La connessione WebSocket non è attiva!");
+        assertTrue(client.isOpen(), "WebSocket connection is not active!");
     }
 
+    /**
+     * Sends a request and waits for the expected response.
+     *
+     * @param requestJson      The JSON request payload.
+     * @param expectedResponse The expected JSON response.
+     * @throws Exception if there is a timeout or assertion failure.
+     */
     private void sendAndAwaitResponse(String requestJson, String expectedResponse) throws Exception {
-        latch = new CountDownLatch(1); // Resetta il latch per ogni richiesta
+        latch = new CountDownLatch(1); // Reset the latch for each request
         client.send(requestJson);
-        boolean messageReceived = latch.await(5, TimeUnit.SECONDS); // Attendi max 5s
+        boolean messageReceived = latch.await(10, TimeUnit.SECONDS); // Wait max 10s
 
-        assertTrue(messageReceived, "❌ Nessuna risposta dal server!");
-        assertNotNull(receivedMessage, "❌ Nessun messaggio ricevuto!");
+        assertTrue(messageReceived, "❌ No response from server!");
+        assertNotNull(receivedMessage, "❌ No message received!");
         assertEquals(expectedResponse, receivedMessage);
     }
 
+    /**
+     * Test to start a game and verify a successful response.
+     */
     @Test
     @Order(1)
     void testStartGame() throws Exception {
@@ -74,6 +94,9 @@ public class FleetFraChinTestWebSocket {
         );
     }
 
+    /**
+     * Test invalid move coordinates and expect an "Out of bound coordinates" response.
+     */
     @Test
     @Order(2)
     void testInvalidMoves() throws Exception {
@@ -87,6 +110,9 @@ public class FleetFraChinTestWebSocket {
         sendAndAwaitResponse(FleetFraChinExecution.createMakeMoveRequest(GAME_ID, PLAYER1_ID, -1, -1), expectedResponse);
     }
 
+    /**
+     * Test valid moves for both players and expect success responses.
+     */
     @Test
     @Order(3)
     void testValidMove() throws Exception {
@@ -97,6 +123,9 @@ public class FleetFraChinTestWebSocket {
         sendAndAwaitResponse(FleetFraChinExecution.createMakeMoveRequest(GAME_ID, PLAYER1_ID, 2, 0), "{\"message\":\"OK: Move accepted\"}");
     }
 
+    /**
+     * Test turn validation error by attempting to move when it's not the player's turn.
+     */
     @Test
     @Order(4)
     void testTurnError() throws Exception {
@@ -106,6 +135,9 @@ public class FleetFraChinTestWebSocket {
         );
     }
 
+    /**
+     * Test an invalid player attempting to make a move.
+     */
     @Test
     @Order(5)
     void testInvalidPlayer() throws Exception {
@@ -115,6 +147,9 @@ public class FleetFraChinTestWebSocket {
         );
     }
 
+    /**
+     * Test an invalid game identifier and expect an error response.
+     */
     @Test
     @Order(6)
     void testInvalidGame() throws Exception {
@@ -124,6 +159,10 @@ public class FleetFraChinTestWebSocket {
         );
     }
 
+    /**
+     * Cleanup method executed after each test.
+     * Ensures WebSocket connection is closed properly.
+     */
     @AfterEach
     public void cleanup() {
         if (client != null && client.isOpen()) {

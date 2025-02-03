@@ -54,8 +54,8 @@ start(_StartType, _StartArgs) ->
   Dispatch = cowboy_router:compile([
     %{ IpaddrBinary, [{<<"/">>, fleetfra_chin_handler, []}] }, % For normal HTTP requests.
     %{ IpaddrBinary, [{<<"/ws">>, alternative_handler, []}] }, % For WebSocket requests.
-    %{ '_', [{"/", fleetfra_chin_handler, []}] }, % For normal HTTP requests.
-    { '_', [{"/ws", alternative_handler, []}]} % For WebSocket.
+    %{ '_', [{"/erl", fleetfra_chin_handler, []}] }, % For normal HTTP requests.
+    { '_', [{"/ws", fleetfra_chin_ws_handler, []}]} % For WebSocket.
   ]),
 
   % It's a mapping of the connection from some remote host's path to cowboy_handler.

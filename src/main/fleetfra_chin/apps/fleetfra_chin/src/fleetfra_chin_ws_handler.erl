@@ -1,80 +1,63 @@
 -module(fleetfra_chin_ws_handler).
--behaviour(cowboy_handler).
+-behaviour(cowboy_websocket).
 -author("SaveMos").
--export([init/2, websocket_handle/2, websocket_info/2, terminate/2]).
+-export([init/2, websocket_init/1, websocket_handle/2, websocket_info/2, terminate/3]).
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
-%% This handler manages WebSocket connections. It forwards the WebSocket
-%% message to the existing `fleetfra_chin_handler` for processing.
+%% WebSocket handler for FleetFra Chin.
+%% This module manages WebSocket connections, processing incoming messages
+%% and delegating request handling to `fleetfra_chin_handler`.
 %%-------------------------------------------------------------------
+
+%% @doc Initializes the WebSocket connection.
+%% @param Req The incoming request.
+%% @param State The initial state of the connection.
+%% @return A tuple indicating that this is a WebSocket connection.
 init(Req, State) ->
-  %% WebSocket handshake is handled by Cowboy automatically.
-  io:format("WebSocket message received: ~p~n", [Req]),
-  websocket_handle(Req , State),
-  {ok, Req, State}.
+  {cowboy_websocket, Req, State}.
 
-%%-------------------------------------------------------------------
-%% @author SaveMos
-%% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Handles WebSocket messages. Decodes the message, then forwards it to
-%% the existing `fleetfra_chin_handler` for processing the game-related logic.
-%% @param Msg The WebSocket message in text format.
+%% @doc Called when the WebSocket connection is initialized.
 %% @param State The state of the WebSocket connection.
-%% @return {ok, Response, State} The response to send back to the WebSocket client.
-%%-------------------------------------------------------------------
+%% @return A tuple indicating success and returning the state.
+websocket_init(State) ->
+  {ok, State}.
+
+%% @doc Handles incoming WebSocket messages.
+%% @param Msg The received WebSocket message (expected to be in JSON format).
+%% @param State The current state of the WebSocket connection.
+%% @return A tuple containing the response message and updated state.
 websocket_handle({text, Msg}, State) ->
-  %io:format("SYSTEM: WebSocket message received!~n ~p ~n", [Msg]),
+  %% Decode the incoming JSON message
+  DecodedMessage = fleetfra_chin_handler:parse_json(Msg),
 
-  %% Decode the incoming WebSocket message (assumed to be JSON).
-  case fleetfra_chin_handler:parse_json(Msg) of
-    {ok, ParsedJson} ->
-      %io:format("Parsed JSON: ~p~n", [ParsedJson]),
-      %% Forward the parsed message to `fleetfra_chin_handler` for processing
-      Response = fleetfra_chin_handler:process_request(ParsedJson),
-      %io:format("Response to send: ~s~n", [Response]),
-      {ok, {text, Response}, State};
+  %% Process the request using the game logic handler
+  Response = fleetfra_chin_handler:process_request(DecodedMessage),
 
-    {error, Reason} ->
-      %io:format("Failed to parse message. Reason: ~s~n", [Reason]),
-      Response = "{\"error\":\"Invalid message format\"}",
-      {ok, {text, Response}, State}
-  end;
+  %% Send the response back to the WebSocket client
+  {reply, {text, Response}, State};
 
-websocket_handle({binary, _BinMsg}, State) ->
-  io:format("Received binary message~n"),
-  {ok, State};
-
+%% @doc Handles unexpected or unsupported WebSocket data.
+%% @param _Data The received data that is not handled explicitly.
+%% @param State The current state.
+%% @return A tuple indicating that the connection remains open.
 websocket_handle(_Data, State) ->
-  %% Handle any other types of data (e.g., binary).
-  io:format("Received unsupported data type: ~p~n", [_Data]),
   {ok, State}.
 
-%%-------------------------------------------------------------------
-%% @author SaveMos
-%% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Handles additional WebSocket data (e.g., ping/pong or control frames).
-%% @param Info WebSocket control frames or other info.
-%% @param State The state of the WebSocket connection.
-%% @return {ok, State}.
-%%-------------------------------------------------------------------
+%% @doc Handles WebSocket messages sent from Erlang processes.
+%% This can be used to push messages from the server to the client.
+%% @param Info The message received from another process.
+%% @param State The current state.
+%% @return A tuple indicating that the connection remains open.
 websocket_info(_Info, State) ->
-  io:format("WebSocket info received: ~p~n", [_Info]),
   {ok, State}.
 
-%%-------------------------------------------------------------------
-%% @author SaveMos
-%% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Terminates the WebSocket connection if needed.
-%% @param _Reason The reason for termination.
-%% @param _State The state of the WebSocket connection.
-%% @return ok.
-%%-------------------------------------------------------------------
-terminate(_Reason, _State) ->
-  io:format("WebSocket connection terminated~n"),
+%% @doc Called when the WebSocket connection is closed.
+%% @param Reason The reason for termination.
+%% @param _Req The WebSocket request.
+%% @param _State The final state before termination.
+%% @return `ok` to indicate successful cleanup.
+terminate(_Reason, _Req, _State) ->
   ok.
