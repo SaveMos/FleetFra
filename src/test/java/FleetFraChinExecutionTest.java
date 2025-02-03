@@ -14,7 +14,7 @@ public class FleetFraChinExecutionTest {
     private static final String GAME_ID = FleetFraChinExecution.generateRandomString(20);
     private static final String PLAYER1_ID = "player1";
     private static final String PLAYER2_ID = "player2";
-    private static final String SERVER_URL = "http://10.2.1.30:8080";
+    private static final String SERVER_URL = "http://10.2.1.30:8080/erl";
 
     @Test
     @Order(1)

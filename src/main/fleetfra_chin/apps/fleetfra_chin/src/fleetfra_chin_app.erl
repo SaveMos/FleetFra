@@ -29,42 +29,28 @@
 %% @doc
 %% Starts the HTTP server.
 %%
-%% Retrieves the IP address of "eth0" and sets up a Cowboy listener
-%% on that address. If "eth0" is unavailable, "127.0.0.1" is used instead.
-%%
 %% @param _StartType Ignored.
 %% @param _StartArgs Ignored.
 %% @return {ok, Pid} where Pid is the supervisor process ID.
 %%%-------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
-  % Get the IP address of eth0
-  {ok, IfAddrs} = inet:getifaddrs(),
-  IP = case lists:keyfind("eth0", 1, IfAddrs) of
-         {_, AddrList} ->
-           case lists:keyfind(addr, 1, AddrList) of
-             {addr, IPAddr} -> inet:ntoa(IPAddr);
-             false -> "127.0.0.1"
-           end;
-         false -> "127.0.0.1"
-       end,
-
-  % We first need to set what cowboy calls "route".
-  IpaddrBinary = list_to_binary(IP),
-
   Dispatch = cowboy_router:compile([
-    %{ IpaddrBinary, [{<<"/">>, fleetfra_chin_handler, []}] }, % For normal HTTP requests.
-    %{ IpaddrBinary, [{<<"/ws">>, alternative_handler, []}] }, % For WebSocket requests.
-    %{ '_', [{"/erl", fleetfra_chin_handler, []}] }, % For normal HTTP requests.
-    { '_', [{"/ws", fleetfra_chin_ws_handler, []}]} % For WebSocket.
-  ]),
+    % Gestisce le richieste HTTP sulla rotta "/erl"
+    %{ '_' , [{"/erl", fleetfra_chin_handler, []}] },
+    % Gestisce le richieste WebSocket sulla rotta "/ws"
+    { '_', [{"/ws", fleetfra_chin_ws_handler, []}]}
+    ]),
 
+  % Avvia il server HTTP Cowboy
   % It's a mapping of the connection from some remote host's path to cowboy_handler.
   % To do that, we use cowboy_router:compile/1 which takes a parameter of type cowboy_router:routes().
-  {ok, _} = cowboy:start_clear(
+  cowboy:start_clear(
     hello_listener,
-    [{port, fleetfra_chin_configuration:get_port()}],
+    [{port, fleetfra_chin_configuration:get_port()}], % the service port.
     #{env => #{dispatch => Dispatch}}
   ),
+
+  % Avvia il game_state_manager e il supervisore
   game_state_manager:start_link(), %% Starts the ETS manager.
   fleetfra_chin_sup:start_link().
 
