@@ -263,17 +263,3 @@ check_game_over(Battlefield) ->
     true -> false;  %% If there's at least one unhit ship, the game is not over
     false -> true   %% If all ships are hit, the game is over
   end.
-
-%% Print the current game state
-print_game_state(GameID) ->
-  io:format("--------------------------------------------------------------------------------------------~n"),
-  io:format("CURRENT GAME STATE~n"),
-  io:format("--------------------------------------------------------------------------------------------~n"),
-  case game_state_manager:get_game_state(GameID) of
-    {ok, ThisGame} ->
-      io:format("GameState: ~p~n", [ThisGame]),
-      io:format("--------------------------------------------------------------------------------------------~n");
-    {error, not_found} ->
-      io:format("Error: Game not found~n"),
-      io:format("--------------------------------------------------------------------------------------------~n")
-  end.

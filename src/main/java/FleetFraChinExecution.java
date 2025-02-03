@@ -11,7 +11,7 @@ import java.util.*;
 
 public class FleetFraChinExecution {
 
-    private static final String SERVER_URL = "http://10.2.1.30:8080/erl";
+    private static final String SERVER_URL = "ws://10.2.1.30:8080/ws";
 
     /**
      * Utility method to send a POST request with a JSON payload.

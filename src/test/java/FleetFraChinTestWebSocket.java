@@ -6,6 +6,10 @@ import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -80,6 +84,13 @@ public class FleetFraChinTestWebSocket {
         assertTrue(messageReceived, "❌ No response from server!");
         assertNotNull(receivedMessage, "❌ No message received!");
         assertEquals(expectedResponse, receivedMessage);
+    }
+
+    private String sendAndAwaitResponse(String requestJson) throws Exception {
+        latch = new CountDownLatch(1); // Reset the latch for each request
+        client.send(requestJson);
+        boolean messageReceived = latch.await(10, TimeUnit.SECONDS); // Wait max 10s
+        return receivedMessage;
     }
 
     /**
@@ -157,6 +168,95 @@ public class FleetFraChinTestWebSocket {
                 FleetFraChinExecution.createMakeMoveRequest("fake_game", PLAYER1_ID, 1, 1),
                 "{\"message\":\"ERROR: Game not found\"}"
         );
+    }
+
+    /**
+     * Test an entire game.
+     */
+    @Test
+    @Order(7)
+    void testFullGame() throws Exception {
+        String gameID = FleetFraChinExecution.generateRandomString(20);
+        String player1FinalState = "";
+        String player2FinalState = "";
+        String currentPlayer;
+        String requestJson, responseJson;
+
+        // STARTING GAME TEST
+        sendAndAwaitResponse(
+                FleetFraChinExecution.createStartGameRequest(gameID, PLAYER1_ID, PLAYER2_ID),
+                "{\"message\":\"OK: Game started\"}"
+        );
+
+        // SIMULATED MATCH TEST
+        // Game loop: alternate turns
+        Random rand = new Random();
+        List<Map<String, Integer>> player1Battlefield = FleetFraChinExecution.generateBattlefield();
+        List<Map<String, Integer>> player2Battlefield = FleetFraChinExecution.generateBattlefield();
+
+        // List the ship positions for player2 (player1 has to sink them)
+        List<Map<String, Integer>> player2ShipPositions = new ArrayList<>();
+        for (Map<String, Integer> cell : player2Battlefield) {
+            if (cell.get("value") == 1) {
+                player2ShipPositions.add(cell);  // Collect the cells where player2's ships are located
+            }
+        }
+
+        int turn = 0;
+        while (true) {
+            currentPlayer = (turn % 2 == 0) ? PLAYER1_ID : PLAYER2_ID;
+            List<Map<String, Integer>> currentPlayerBattlefield = (turn % 2 == 0) ? player1Battlefield : player2Battlefield;
+            List<Map<String, Integer>> opponentBattlefield = (turn % 2 == 0) ? player2Battlefield : player1Battlefield;
+
+            int row = -1, col = -1;
+
+            if (currentPlayer.equals(PLAYER1_ID) && !player2ShipPositions.isEmpty()) {
+                // Player1 hits positions of player2's ships without missing
+                Map<String, Integer> targetCell = player2ShipPositions.get(0);
+                row = targetCell.get("row");
+                col = targetCell.get("col");
+
+                // Remove the hit ship from the list
+                player2ShipPositions.removeFirst();
+            } else {
+                // Player2 shoots randomly
+                row = rand.nextInt(10);
+                col = rand.nextInt(10);
+            }
+
+            requestJson = FleetFraChinExecution.createMakeMoveRequest(gameID, currentPlayer, row, col);
+            responseJson = sendAndAwaitResponse(requestJson);
+
+            switch (responseJson) {
+                case "{\"message\":\"OK: Move accepted\"}" -> {
+                    System.out.println(currentPlayer + " has played.");
+                }
+                // Check if the game has ended (e.g., "VICTORY" or "DEFEAT" directly from the response)
+                case "{\"message\":\"VICTORY\"}" -> {
+                    if (currentPlayer.equals(PLAYER1_ID)) {
+                        player1FinalState = "VICTORY";  // Player1 won
+                    } else {
+                        player2FinalState = "VICTORY";  // Player2 won
+                    }
+                }
+                case "{\"message\":\"DEFEAT\"}" -> {
+                    if (currentPlayer.equals(PLAYER1_ID)) {
+                        player1FinalState = "DEFEAT";  // Player1 lost
+                    } else {
+                        player2FinalState = "DEFEAT";  // Player2 lost
+                    }
+                }
+            }
+
+            if ((player1FinalState.equals("VICTORY") || player1FinalState.equals("DEFEAT")) &&
+                    (player2FinalState.equals("VICTORY") || player2FinalState.equals("DEFEAT"))){
+                break;  // End the game if both players have a final state (either victory or defeat)
+            }
+
+            turn++; // Proceed to the next turn
+        }
+
+
     }
 
     /**
