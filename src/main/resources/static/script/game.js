@@ -46,27 +46,7 @@ function setUserGrid(grid){
 }
 
 async function sendStart(){
-    const jsonGrid = gridToJson(playerGrid);
-    /*
-    try {
-        const response = await fetch(`http://${serverIp}:${serverPort}${endpoint}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        });
 
-        if (response.ok) {
-            const responseData = await response.json();
-            console.log("Server Response:", responseData);
-        } else {
-            console.error("Error in the server response:", response.status, response.statusText);
-        }
-    } catch (error) {
-        console.error("Error sending the request:", error);
-    }
-     */
     $.ajax({
         url: "http://10.2.1.26:5050/game",
         data: user_logged,
@@ -89,6 +69,12 @@ async function sendStart(){
             setTimeout(function() {
                 hideWaitingScreen();
             }, 2000);
+
+            changeUserGrid();
+            changeOpponentGrid(true);
+            startGameButton.disabled = true;
+            initializeWebSocket(jsonResponse.matchId, playerGrid);
+
         },
         error: function (xhr) {
             document.getElementById("matchMaking").innerText = "Opponent not found!";
@@ -99,10 +85,6 @@ async function sendStart(){
             }, 2000);
         }
     })
-
-    changeUserGrid()
-
-
 }
 function showWaitingScreen() {
     // Creiamo un overlay per disabilitare l'interazione con la pagina
@@ -164,16 +146,15 @@ function changeUserGrid(){
 
                 const [_, row, col] = cell.id.split(',').map(Number);
 
-                // For the cells that contains number of letters the listeners aren't associated
                 if(playerGrid[row][col] === -1) {
-                    let cell = document.getElementById(`${boardName},${row},${col}`);
-                    cell.classList.remove("unavailable");
+                    let currentCell = document.getElementById(`${boardName},${row},${col}`);
+                    currentCell.classList.remove("unavailable");
                 }
             }
         });
 }
 
-function changeOpponentGrid(){
+function changeOpponentGrid(activate){
 
     let boardName = "opponent";
 
@@ -185,26 +166,35 @@ function changeOpponentGrid(){
             const [_, row, col] = cell.id.split(',').map(Number);
 
             // For the cells that contains number of letters the listeners aren't associated
-            if(playerGrid[row][col] === -1) {
-                let cell = document.getElementById(`${boardName},${row},${col}`);
-                cell.classList.remove("unavailable");
+            let currentCell = document.getElementById(`${boardName},${row},${col}`);
+
+            if(row !== 0 && col !== 0) {
+                if(activate) {
+                    currentCell.addEventListener("mouseover", changeCell);
+                    currentCell.addEventListener("mouseout", restoreCell);
+                    currentCell.addEventListener("click", shoot);
+                }else{
+                    currentCell.removeEventListener("mouseover", changeCell);
+                    currentCell.removeEventListener("mouseout", restoreCell);
+                    currentCell.removeEventListener("click", shoot);
+                }
             }
         }
     });
 }
+function changeCell(e) {
+    const [_, row, col] = e.target.id.split(',').map(Number); // Estrae riga e colonna dalla cella
 
-function gridToJson(grid) {
-    const jsonArray = [];
+    document.getElementById(`opponent,${row},${col}`).classList.add("eligible");
+}
+function restoreCell(e) {
+    const [_, row, col] = e.target.id.split(',').map(Number); // Estrae riga e colonna dalla cella
 
-    for (let row = 0; row < grid.length; row++) {
-        for (let col = 0; col < grid[row].length; col++) {
-            jsonArray.push({
-                row: row,
-                col: col,
-                value: grid[row][col]
-            });
-        }
-    }
-
-    return JSON.stringify(jsonArray, null, 2);
+    document.getElementById(`opponent,${row},${col}`).classList.remove("eligible");
+}
+function shoot(e) {
+    const [_, row, col] = e.target.id.split(',').map(Number); // Estrae riga e colonna dalla cella
+    console.log("shot "+row+" - "+col);
+    sendMoveMessage(row, col);
+    //document.getElementById(`opponent,${row},${col}`).classList.add("eligible");
 }
