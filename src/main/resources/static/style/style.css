@@ -260,6 +260,9 @@ h3 {
 .eligible{
     background-color: #ff8000;
 }
+.sink{
+    background-color: rgba(231, 4, 72, 0.91);
+}
 
 .gameButton {
     padding: 10px 15px;
