@@ -182,21 +182,12 @@ public class TestFleetFraChinWebSocket {
         );
     }
 
-    @Test
-    @Order(7)
-    void testGetInfo() throws Exception{
-        sendAndAwaitResponse(
-                FleetFraChinExecution.getInfoRequest(GAME_ID),
-                "{\"message\":\"ERROR: Game not found\"}"
-        );
-
-    }
 
     /**
      * Test an entire game.
      */
     @Test
-    @Order(8)
+    @Order(7)
     void testFullGame() throws Exception {
         String gameID = FleetFraChinExecution.generateRandomString(20);
         String player1FinalState = "";

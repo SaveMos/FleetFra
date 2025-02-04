@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "type_request": {
+      "type": "string"
+    },
+    "game_id": {
+      "type": "string"
+    }
+  },
+  "required": ["type_request", "game_id"]
+}
