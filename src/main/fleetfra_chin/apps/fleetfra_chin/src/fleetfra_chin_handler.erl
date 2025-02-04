@@ -41,6 +41,12 @@ process_request(ParsedJson) ->
             fleetfra_game:start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}),
             build_response(<<"OK: Game started">>);
 
+        <<"start_game_client">> ->
+            Player = maps:get(<<"player">>, ParsedJson),
+            Battlefield = maps:get(<<"player_battlefield">>, ParsedJson),
+            fleetfra_game:start_game_client(GameID, {Player, Battlefield}),
+            build_response(<<"OK: Game started">>);
+
         <<"make_move">> ->
             Player = maps:get(<<"player">>, ParsedJson),
             Move = maps:get(<<"move">>, ParsedJson),
@@ -54,6 +60,7 @@ process_request(ParsedJson) ->
                 {error, not_your_turn} -> build_response(<<"TURN ERROR: Not your turn">>);
                 {error, player_not_found} -> build_response(<<"ERROR: Player not found">>);
                 {error, game_not_found} -> build_response(<<"ERROR: Game not found">>);
+                {error , game_not_initiated} -> build_response(<<"ERROR: Game found but not initiated">>);
                 {fin, winner} -> build_response(<<"VICTORY">>);
                 {fin, loser} -> build_response(<<"DEFEAT">>)
             end;

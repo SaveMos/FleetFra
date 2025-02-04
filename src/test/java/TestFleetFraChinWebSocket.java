@@ -20,12 +20,12 @@ import java.util.concurrent.TimeUnit;
  */
 @SpringBootTest(classes = FleetFraChinExecution.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class FleetFraChinTestWebSocket {
+public class TestFleetFraChinWebSocket {
 
     // Constants for game and player identifiers
     private static final String GAME_ID = FleetFraChinExecution.generateRandomString(20);
-    private static final String PLAYER1_ID = "player1";
-    private static final String PLAYER2_ID = "player2";
+    private static final String PLAYER1_ID = "player111";
+    private static final String PLAYER2_ID = "player222";
     private static final String SERVER_URL = "ws://10.2.1.30:8080/ws";
 
     private WebSocketClient client;
@@ -90,7 +90,12 @@ public class FleetFraChinTestWebSocket {
         latch = new CountDownLatch(1); // Reset the latch for each request
         client.send(requestJson);
         boolean messageReceived = latch.await(10, TimeUnit.SECONDS); // Wait max 10s
-        return receivedMessage;
+        if (messageReceived) {
+            return receivedMessage;
+        }else{
+            return null;
+        }
+
     }
 
     /**
@@ -99,8 +104,15 @@ public class FleetFraChinTestWebSocket {
     @Test
     @Order(1)
     void testStartGame() throws Exception {
+        List<Map<String, Integer>> player1Battlefield = FleetFraChinExecution.generateBattlefield();
         sendAndAwaitResponse(
-                FleetFraChinExecution.createStartGameRequest(GAME_ID, PLAYER1_ID, PLAYER2_ID),
+                FleetFraChinExecution.createStartGameRequestClient(GAME_ID, PLAYER1_ID ,player1Battlefield),
+                "{\"message\":\"OK: Game started\"}"
+        );
+
+        List<Map<String, Integer>> player2Battlefield = FleetFraChinExecution.generateBattlefield();
+        sendAndAwaitResponse(
+                FleetFraChinExecution.createStartGameRequestClient(GAME_ID, PLAYER2_ID ,player2Battlefield),
                 "{\"message\":\"OK: Game started\"}"
         );
     }
@@ -182,17 +194,21 @@ public class FleetFraChinTestWebSocket {
         String currentPlayer;
         String requestJson, responseJson;
 
-        // STARTING GAME TEST
-        sendAndAwaitResponse(
-                FleetFraChinExecution.createStartGameRequest(gameID, PLAYER1_ID, PLAYER2_ID),
-                "{\"message\":\"OK: Game started\"}"
-        );
-
-        // SIMULATED MATCH TEST
-        // Game loop: alternate turns
         Random rand = new Random();
         List<Map<String, Integer>> player1Battlefield = FleetFraChinExecution.generateBattlefield();
         List<Map<String, Integer>> player2Battlefield = FleetFraChinExecution.generateBattlefield();
+
+        // STARTING GAME TEST
+        sendAndAwaitResponse(
+                FleetFraChinExecution.createStartGameRequestClient(gameID, PLAYER1_ID ,player1Battlefield),
+                "{\"message\":\"OK: Game started\"}"
+        );
+
+        sendAndAwaitResponse(
+                FleetFraChinExecution.createStartGameRequestClient(gameID, PLAYER2_ID ,player2Battlefield),
+                "{\"message\":\"OK: Game started\"}"
+        );
+
 
         // List the ship positions for player2 (player1 has to sink them)
         List<Map<String, Integer>> player2ShipPositions = new ArrayList<>();
@@ -205,14 +221,10 @@ public class FleetFraChinTestWebSocket {
         int turn = 0;
         while (true) {
             currentPlayer = (turn % 2 == 0) ? PLAYER1_ID : PLAYER2_ID;
-            List<Map<String, Integer>> currentPlayerBattlefield = (turn % 2 == 0) ? player1Battlefield : player2Battlefield;
-            List<Map<String, Integer>> opponentBattlefield = (turn % 2 == 0) ? player2Battlefield : player1Battlefield;
-
-            int row = -1, col = -1;
-
+            int row, col;
             if (currentPlayer.equals(PLAYER1_ID) && !player2ShipPositions.isEmpty()) {
                 // Player1 hits positions of player2's ships without missing
-                Map<String, Integer> targetCell = player2ShipPositions.get(0);
+                Map<String, Integer> targetCell = player2ShipPositions.getFirst();
                 row = targetCell.get("row");
                 col = targetCell.get("col");
 
@@ -228,24 +240,29 @@ public class FleetFraChinTestWebSocket {
             responseJson = sendAndAwaitResponse(requestJson);
 
             switch (responseJson) {
-                case "{\"message\":\"OK: Move accepted\"}" -> {
-                    System.out.println(currentPlayer + " has played.");
-                }
+                case "{\"message\":\"OK: Move accepted\"}" -> System.out.println(currentPlayer + " has played.");
+
                 // Check if the game has ended (e.g., "VICTORY" or "DEFEAT" directly from the response)
                 case "{\"message\":\"VICTORY\"}" -> {
                     if (currentPlayer.equals(PLAYER1_ID)) {
                         player1FinalState = "VICTORY";  // Player1 won
+                        System.out.println(currentPlayer + " won.");
                     } else {
                         player2FinalState = "VICTORY";  // Player2 won
+                        System.out.println(currentPlayer + " won.");
                     }
                 }
                 case "{\"message\":\"DEFEAT\"}" -> {
                     if (currentPlayer.equals(PLAYER1_ID)) {
                         player1FinalState = "DEFEAT";  // Player1 lost
+                        System.out.println(currentPlayer + " lost.");
                     } else {
                         player2FinalState = "DEFEAT";  // Player2 lost
+                        System.out.println(currentPlayer + " lost.");
                     }
                 }
+                case null -> throw new IllegalStateException("Null value");
+                default -> throw new IllegalStateException("Unexpected value: " + responseJson);
             }
 
             if ((player1FinalState.equals("VICTORY") || player1FinalState.equals("DEFEAT")) &&

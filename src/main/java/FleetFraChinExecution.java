@@ -11,8 +11,6 @@ import java.util.*;
 
 public class FleetFraChinExecution {
 
-    private static final String SERVER_URL = "ws://10.2.1.30:8080/ws";
-
     /**
      * Utility method to send a POST request with a JSON payload.
      * @param url The target URL.
@@ -47,7 +45,7 @@ public class FleetFraChinExecution {
      */
     public static String createStartGameRequest(String gameId, String player1, String player2) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        String jsonPayload = objectMapper.writeValueAsString(Map.of(
+        return objectMapper.writeValueAsString(Map.of(
                 "game_id", gameId,
                 "type_request", "start_game",
                 "player1", player1,
@@ -55,7 +53,16 @@ public class FleetFraChinExecution {
                 "player1_battlefield", generateBattlefield(),
                 "player2_battlefield", generateBattlefield()
         ));
-        return jsonPayload;
+    }
+
+    public static String createStartGameRequestClient(String gameId, String player , List<Map<String, Integer>> battle) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(Map.of(
+                "game_id", gameId,
+                "type_request", "start_game_client",
+                "player", player,
+                "player_battlefield", battle
+        ));
     }
 
     /**
@@ -69,50 +76,40 @@ public class FleetFraChinExecution {
      */
     public static String createMakeMoveRequest(String gameId, String player, int row, int col) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        String jsonPayload = objectMapper.writeValueAsString(Map.of(
+        return objectMapper.writeValueAsString(Map.of(
                 "game_id", gameId,
                 "type_request", "make_move",
                 "player", player,
                 "move", Map.of("row", row, "col", col)
         ));
-        return jsonPayload;
     }
 
-    /**
-     * Generates an empty battlefield grid (10x10 initialized with 0s) and places predefined ships.
-     * @return A list of maps representing the battlefield grid.
-     */
-    public static List<Map<String, Integer>> generateBattlefield() {
-        int rows = 10;
-        int cols = 10;
-        List<Map<String, Integer>> battlefield = new ArrayList<>();
+    private static final int ROWS = 10;
+    private static final int COLS = 10;
+    private static final int[] SHIP_LENGTHS = {3, 4, 5};
+    private static final Random RANDOM = new Random();
 
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
+    public static List<Map<String, Integer>> generateBattlefield() {
+        List<Map<String, Integer>> battlefield = new ArrayList<>();
+        int[][] grid = new int[ROWS][COLS];
+
+        // Initialize battlefield with empty cells
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
                 battlefield.add(new HashMap<>(Map.of("row", row, "col", col, "value", 0)));
             }
         }
 
-        int[] shipLengths = {3, 4, 5};
-        int[][] shipPositions = {
-                {0, 0, 1},
-                {1, 1, 0},
-                {4, 6, 1}
-        };
+        // Place ships randomly
+        for (int length : SHIP_LENGTHS) {
+            placeShipRandomly(grid, length);
+        }
 
-        int shipIndex = 0;
-        for (int[] position : shipPositions) {
-            int row = position[0];
-            int col = position[1];
-            int direction = position[2];
-            int length = shipLengths[shipIndex];
-            shipIndex++;
-
-            for (int i = 0; i < length; i++) {
-                if (direction == 1) {
-                    setCell(battlefield, row, col + i, 1);
-                } else {
-                    setCell(battlefield, row + i, col, 1);
+        // Update battlefield based on grid
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                if (grid[row][col] == 1) {
+                    setCell(battlefield, row, col);
                 }
             }
         }
@@ -120,17 +117,49 @@ public class FleetFraChinExecution {
         return battlefield;
     }
 
-    /**
-     * Sets the value of a specific cell in the battlefield.
-     * @param battlefield The battlefield grid.
-     * @param row The row index.
-     * @param col The column index.
-     * @param value The value to set.
-     */
-    private static void setCell(List<Map<String, Integer>> battlefield, int row, int col, int value) {
-        battlefield.stream()
-                .filter(cell -> cell.get("row") == row && cell.get("col") == col)
-                .forEach(cell -> cell.put("value", value));
+    private static void placeShipRandomly(int[][] grid, int length) {
+        boolean placed = false;
+
+        while (!placed) {
+            int row = RANDOM.nextInt(ROWS);
+            int col = RANDOM.nextInt(COLS);
+            boolean horizontal = RANDOM.nextBoolean();
+
+            if (canPlaceShip(grid, row, col, length, horizontal)) {
+                for (int i = 0; i < length; i++) {
+                    if (horizontal) {
+                        grid[row][col + i] = 1;
+                    } else {
+                        grid[row + i][col] = 1;
+                    }
+                }
+                placed = true;
+            }
+        }
+    }
+
+    private static boolean canPlaceShip(int[][] grid, int row, int col, int length, boolean horizontal) {
+        if (horizontal) {
+            if (col + length > COLS) return false;
+            for (int i = 0; i < length; i++) {
+                if (grid[row][col + i] == 1) return false;
+            }
+        } else {
+            if (row + length > ROWS) return false;
+            for (int i = 0; i < length; i++) {
+                if (grid[row + i][col] == 1) return false;
+            }
+        }
+        return true;
+    }
+
+    private static void setCell(List<Map<String, Integer>> battlefield, int row, int col) {
+        for (Map<String, Integer> cell : battlefield) {
+            if (cell.get("row") == row && cell.get("col") == col) {
+                cell.put("value", 1);
+                break;
+            }
+        }
     }
 
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -140,102 +169,11 @@ public class FleetFraChinExecution {
         StringBuilder result = new StringBuilder();
 
         for (int i = 0; i < length; i++) {
-            int randomIndex = random.nextInt(CHARACTERS.length()); // Scegli un indice casuale
-            result.append(CHARACTERS.charAt(randomIndex)); // Aggiungi il carattere casuale alla stringa
+            int randomIndex = random.nextInt(CHARACTERS.length());
+            result.append(CHARACTERS.charAt(randomIndex));
         }
 
         return result.toString();
-    }
-
-    public static void main(String[] args) {
-        try {
-            String gameID = generateRandomString(20);
-            String player1FinalState = "";
-            String player2FinalState = "";
-            String player1ID = "player1";
-            String player2ID = "player2";
-            String currentPlayer;
-            String requestJson, responseJson;
-
-
-            // STARTING GAME TEST
-            requestJson = createStartGameRequest(gameID, player1ID, player2ID);
-            responseJson = sendPostRequest(SERVER_URL , requestJson);
-            System.out.println("Server Response: " + responseJson);
-
-
-            // SIMULATED MATCH TEST
-            // Game loop: alternate turns
-            Random rand = new Random();
-            List<Map<String, Integer>> player1Battlefield = generateBattlefield();
-            List<Map<String, Integer>> player2Battlefield = generateBattlefield();
-
-            // List the ship positions for player2 (player1 has to sink them)
-            List<Map<String, Integer>> player2ShipPositions = new ArrayList<>();
-            for (Map<String, Integer> cell : player2Battlefield) {
-                if (cell.get("value") == 1) {
-                    player2ShipPositions.add(cell);  // Collect the cells where player2's ships are located
-                }
-            }
-
-            int turn = 0;
-            while (true) {
-                currentPlayer = (turn % 2 == 0) ? player1ID : player2ID;
-                List<Map<String, Integer>> currentPlayerBattlefield = (turn % 2 == 0) ? player1Battlefield : player2Battlefield;
-                List<Map<String, Integer>> opponentBattlefield = (turn % 2 == 0) ? player2Battlefield : player1Battlefield;
-
-                int row = -1, col = -1;
-
-                if (currentPlayer.equals(player1ID) && !player2ShipPositions.isEmpty()) {
-                    // Player1 hits positions of player2's ships without missing
-                    Map<String, Integer> targetCell = player2ShipPositions.get(0);
-                    row = targetCell.get("row");
-                    col = targetCell.get("col");
-
-                    // Remove the hit ship from the list
-                    player2ShipPositions.removeFirst();
-                } else {
-                    // Player2 shoots randomly
-                    row = rand.nextInt(10);
-                    col = rand.nextInt(10);
-                }
-
-                requestJson = createMakeMoveRequest(gameID, currentPlayer, row, col);
-                responseJson = sendPostRequest(SERVER_URL, requestJson);
-                System.out.println("Server Response for " + currentPlayer+": " + responseJson);
-
-                if(responseJson.equals("{\"message\":\"ERROR: Game not found\"}")) {
-                    break;  // If the game is not found, exit the loop.
-                }
-
-                // Check if the game has ended (e.g., "VICTORY" or "DEFEAT" directly from the response)
-                if (responseJson.equals("{\"message\":\"VICTORY\"}")) {
-                    if (currentPlayer.equals(player1ID)){
-                        player1FinalState = "VICTORY";  // Player1 won
-                    }else{
-                        player2FinalState = "VICTORY";  // Player2 won
-                    }
-                }
-
-                if (responseJson.equals("{\"message\":\"DEFEAT\"}")) {
-                    if (currentPlayer.equals(player1ID)){
-                        player1FinalState = "DEFEAT";  // Player1 lost
-                    }else{
-                        player2FinalState = "DEFEAT";  // Player2 lost
-                    }
-                }
-
-                if ((player1FinalState.equals("VICTORY") || player1FinalState.equals("DEFEAT")) &&
-                        (player2FinalState.equals("VICTORY") || player2FinalState.equals("DEFEAT"))){
-                    break;  // End the game if both players have a final state (either victory or defeat)
-                }
-
-                turn++; // Proceed to the next turn
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
 }
