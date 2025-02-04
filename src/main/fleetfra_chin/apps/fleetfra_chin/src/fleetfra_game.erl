@@ -1,5 +1,5 @@
 -module(fleetfra_game).
--export([start_game/2 ,start_game_client/2, make_move/2]).
+-export([start_game/2 ,start_game_client/2, make_move/2 , get_game_info/1]).
 -author("SaveMos").
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -128,6 +128,53 @@ init_ets() ->
     undefined -> ets:new(game_state_table, [named_table, public, set]);
     _ -> ok
   end.
+
+get_game_info(GameID) ->
+  case game_state_manager:get_game_state(GameID) of
+    {ok, GameState} ->
+      JsonResponse = game_state_to_json(GameState),
+      {ok, JsonResponse};
+    {error, not_found} ->
+      {error, game_not_found}
+  end.
+
+game_state_to_json(#game{
+  game_id = GameID,
+  player1 = Player1,
+  player2 = Player2,
+  battlefields = Battlefields,
+  current_turn = CurrentTurn,
+  waiting_player = WaitingPlayer,
+  game_over = GameOver,
+  winner = Winner,
+  created_at = CreatedAt,
+  init_complete = InitComplete
+}) ->
+  JsonMap = #{
+    <<"game_id">> => GameID,
+    <<"player1">> => Player1,
+    <<"player2">> => Player2,
+    <<"battlefields">> => battlefields_to_json(Battlefields),
+    <<"current_turn">> => CurrentTurn,
+    <<"waiting_player">> => WaitingPlayer,
+    <<"game_over">> => GameOver,
+    <<"winner">> => Winner,
+    <<"created_at">> => CreatedAt,
+    <<"init_complete">> => InitComplete
+  },
+  jsx:encode(JsonMap).
+
+battlefields_to_json(Battlefields) ->
+  maps:map(fun(_, BF) -> battlefield_to_json(BF) end, Battlefields).
+
+battlefield_to_json(Battlefield) when is_map(Battlefield) ->
+  maps:values(Battlefield);
+battlefield_to_json(Battlefield) when is_list(Battlefield) ->
+  [cell_to_json(Cell) || Cell <- Battlefield].
+
+cell_to_json(#{<<"row">> := Row, <<"col">> := Col, <<"value">> := Value}) ->
+  #{<<"row">> => Row, <<"col">> => Col, <<"value">> => Value}.
+
 
 %%-------------------------------------------------------------------
 %% @author SaveMos

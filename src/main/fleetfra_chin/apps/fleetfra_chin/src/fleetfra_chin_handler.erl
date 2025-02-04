@@ -47,6 +47,12 @@ process_request(ParsedJson) ->
             fleetfra_game:start_game_client(GameID, {Player, Battlefield}),
             build_response(<<"OK: Game started">>);
 
+        <<"get_game_info">> ->
+            case fleetfra_game:get_game_info(GameID) of
+                {ok, JsonResponse} -> JsonResponse;
+                {error, game_not_found} -> build_response(<<"ERROR: Game not found">>)
+            end;
+
         <<"make_move">> ->
             Player = maps:get(<<"player">>, ParsedJson),
             Move = maps:get(<<"move">>, ParsedJson),

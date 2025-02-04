@@ -57,14 +57,20 @@ public class FleetFraChinExecution {
 
     public static String createStartGameRequestClient(String gameId, String player , List<Map<String, Integer>> battle) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        String ret = objectMapper.writeValueAsString(Map.of(
+        return objectMapper.writeValueAsString(Map.of(
                 "game_id", gameId,
                 "type_request", "start_game_client",
                 "player", player,
                 "player_battlefield", battle
         ));
-        System.out.println(ret);
-        return ret;
+    }
+
+    public static String getInfoRequest(String gameId) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(Map.of(
+                "game_id", gameId,
+                "type_request", "get_game_info"
+        ));
     }
 
     /**
