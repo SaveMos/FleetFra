@@ -9,6 +9,7 @@
 %% The game state includes the game ID, the players' names, their battlefields, the current turn, and whether the game is over.
 %% @param GameID The unique identifier for the game.
 %% @param {Player1, Player2, Battlefield1, Battlefield2} A tuple containing the players' names and their battlefields.
+%% @end
 %%-------------------------------------------------------------------
 -record(game, {game_id, player1 , player2, battlefields, current_turn, waiting_player ,game_over, winner, created_at , init_complete}).
 
@@ -50,6 +51,7 @@ start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}) ->
 %% the current turn, and whether the game is over and other information.
 %% @param GameID The unique identifier for the game.
 %% @param {Player, Battlefield} A tuple containing the player names and his battlefield.
+%% @end
 %%-------------------------------------------------------------------
 
 start_game_client(GameID, {Player, Battlefield}) ->
@@ -110,6 +112,7 @@ start_game_client(GameID, {Player, Battlefield}) ->
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Cast a binary object into an atom.
+%% @end
 %%-------------------------------------------------------------------
 bin_to_atom(Bin) ->
   case is_binary(Bin) of
@@ -122,12 +125,22 @@ bin_to_atom(Bin) ->
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Initialize the ETS, use it before inserting game states.
+%% @end
 %%-------------------------------------------------------------------
 init_ets() ->
   case ets:info(game_state_table) of
     undefined -> ets:new(game_state_table, [named_table, public, set]);
     _ -> ok
   end.
+
+%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc
+%% Return a JSON with all the information about a certain game.
+%% @param GameID The unique identifier for the game.
+%% @end
+%%-------------------------------------------------------------------
 
 get_game_info(GameID) ->
   case game_state_manager:get_game_state(GameID) of
@@ -137,6 +150,15 @@ get_game_info(GameID) ->
     {error, not_found} ->
       {error, game_not_found}
   end.
+
+%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc
+%% Return a JSON with all the information about a certain game.
+%% @param GameState The game structure.
+%% @end
+%%-------------------------------------------------------------------
 
 game_state_to_json(#game{
   game_id = GameID,
@@ -185,6 +207,7 @@ cell_to_json(#{<<"row">> := Row, <<"col">> := Col, <<"value">> := Value}) ->
 %% @param GameID The unique identifier for the game.
 %% @param {Player, {Row, Col}} A tuple containing the player's name and the coordinates of the move.
 %% @return {ok, NewGameState} if the move is valid and accepted, or an error tuple if invalid.
+%% @end
 %%-------------------------------------------------------------------
 make_move(GameID, {Player, {Row, Col}}) ->
   PlayerAtom = bin_to_atom(Player),
@@ -197,7 +220,6 @@ make_move(GameID, {Player, {Row, Col}}) ->
       case GameState#game.current_turn of
         PlayerAtom ->
           %io:format("OK: ~p can play!~n" , [PlayerAtom]),
-
           case maps:find(PlayerAtom, GameState#game.battlefields) of
             {ok, PlayerBattlefield} ->
               %io:format("OK: ~p battlefield found!~n"  , [PlayerAtom]),

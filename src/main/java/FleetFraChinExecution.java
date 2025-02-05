@@ -93,7 +93,7 @@ public class FleetFraChinExecution {
     }
 
     private static final int ROWS = 10;
-    private static final int COLS = 10;
+    private static final int COLS = ROWS;
     private static final int[] SHIP_LENGTHS = {3, 4, 5};
     private static final Random RANDOM = new Random();
 

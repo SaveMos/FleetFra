@@ -4,10 +4,6 @@
 %% @doc
 %% This module starts the HTTP server using Cowboy.
 %%
-%% It dynamically retrieves the IP address of the "eth0" network interface
-%% and uses it to configure Cowboy's routing. If "eth0" is not found,
-%% it falls back to using "127.0.0.1".
-%%
 %% The module follows the standard Erlang/OTP application behavior,
 %% implementing the `start/2` and `stop/1` functions.
 %%
@@ -20,7 +16,7 @@
 -module(fleetfra_chin_app).
 -author("SaveMos").
 -behaviour(application).
-
+%% API
 -export([start/2, stop/1]).
 
 %%%-------------------------------------------------------------------

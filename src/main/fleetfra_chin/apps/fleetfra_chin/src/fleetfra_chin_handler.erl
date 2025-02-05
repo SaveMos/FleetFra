@@ -3,21 +3,21 @@
 -author("SaveMos").
 -export([init/2 , process_request/1 , parse_json/1 , build_response/1]).
 
-%%-------------------------------------------------------------------
+%%==============================================================================%%
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Handles incoming HTTP requests for starting a game or making a move.
 %% Parses the request body, extracts the game information, and calls the appropriate game logic functions.
+%% Created : 01. feb 2025 09:53
+%% @end
 %% @param Req The HTTP request object.
 %% @param State The state of the Cowboy handler.
 %% @return {ok, Req2, State} The updated request and state.
-%%-------------------------------------------------------------------
+%%==============================================================================%%
 init(Req, State) ->
-    io:format("SYSTEM: Normal HTTP message received!~n"),
     {ok, Body, Req1} = cowboy_req:read_body(Req),
-    ParsedJson = parse_json(Body),
-    Response = process_request(ParsedJson),
+    Response = process_request(Body),
     Req2 = cowboy_req:reply(200, #{<<"content-type">> => <<"application/json">>}, Response, Req1),
     {ok, Req2, State}.
 
@@ -26,10 +26,12 @@ init(Req, State) ->
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Processes the request, which is a JSON object representing a game action.
+%% @end
 %% @param ParsedJson The parsed JSON request.
 %% @return A JSON-encoded response.
 %%-------------------------------------------------------------------
-process_request(ParsedJson) ->
+process_request(Body) ->
+    ParsedJson = parse_json({jsx , Body}),
     GameID = maps:get(<<"game_id">>, ParsedJson),
     TypeRequest = maps:get(<<"type_request">>, ParsedJson),
     case TypeRequest of
@@ -78,20 +80,39 @@ process_request(ParsedJson) ->
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Parses the incoming JSON request body and returns a map.
+%% @end
 %% @param Body The JSON body of the request.
 %% @return A map representing the parsed JSON.
 %%-------------------------------------------------------------------
-parse_json(Body) ->
-    %% Assume JSON parsing succeeds
-    jsx:decode(Body, [return_maps]).
+parse_json({jsx , Body}) ->
+    %% Assume JSON parsing succeeds using JSX.
+    jsx:decode(Body, [{return_maps, true}]);
+parse_json({jiffy , Body}) ->
+    %% Assume JSON parsing succeeds using JSX.
+    jiffy:decode(Body).
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Builds a JSON response string to send back to the client.
+%% @end
 %% @param Message The message to include in the response.
 %% @return The JSON-encoded response.
 %%-------------------------------------------------------------------
+
 build_response(Message) ->
+    decode_json(Message).
+
+%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc
+%% Decode a MAP into a JSON message.
+%% @end
+%%-------------------------------------------------------------------
+
+decode_json(Message) ->
+    %% Encode response using JSX
     jsx:encode(#{<<"message">> => Message}).
+

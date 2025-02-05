@@ -1,6 +1,6 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["game_id", "player", "type_request", "player_battlefield"],
   "properties": {
     "game_id": {
       "type": "string"
@@ -14,7 +14,7 @@
     },
     "player_battlefield": {
       "type": "array",
-      "minItems": 100,
+      "minItems": 1,
       "maxItems": 100,
       "items": {
         "type": "object",
@@ -37,5 +37,7 @@
         }
       }
     }
-  }
+  },
+  "required": ["game_id", "player", "type_request", "player_battlefield"],
+  "additionalProperties": false
 }
