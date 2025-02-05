@@ -1,5 +1,6 @@
 package it.unipi.dsmt.CaveDowny.DTO;
 
+//manage the request for the view of the users
 public class ViewUsersRequestDTO {
     private String firstName;
     private String lastName;

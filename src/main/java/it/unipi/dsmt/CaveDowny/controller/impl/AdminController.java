@@ -25,9 +25,9 @@ public class AdminController implements AdminControllerInterface {
     @PostMapping("/viewDetailedUsers")
     @Override
     public ResponseEntity<String> viewUsers(@RequestBody ViewUsersRequestDTO request) {
-        //pageDTO contains the list of users to be displayed
+        //list of users to be displayed with stats
         List<UserDTO> list = userDAO.viewUsers(request, true);
-        //ObjectMapper is used to convert the pageDTO object into a JSON object
+        //ObjectMapper to convert the list of users into a JSON object
         ObjectMapper objectMapper = new ObjectMapper();
 
         try {
@@ -45,6 +45,7 @@ public class AdminController implements AdminControllerInterface {
     @PostMapping("/removeUser")
     @Override
     public ResponseEntity<String> removeUser(@RequestBody String username) {
+        //remove the user from the database
         if(!userDAO.removeUser(username)){
             return new ResponseEntity<>("Error during the operation", HttpStatus.BAD_REQUEST);
         }
@@ -56,9 +57,9 @@ public class AdminController implements AdminControllerInterface {
     @PostMapping("/viewUsers")
     @Override
     public ResponseEntity<String> viewRemoveUser(@RequestBody ViewUsersRequestDTO request) {
-        //pageDTO contains the list of users to be displayed
+        //list of users to be displayed without stats, because it is the user removal page
         List<UserDTO> list = userDAO.viewUsers(request, false);
-        //ObjectMapper is used to convert the pageDTO object into a JSON object
+        //ObjectMapper to convert the list of users into a JSON object
         ObjectMapper objectMapper = new ObjectMapper();
 
         try {
@@ -81,12 +82,12 @@ public class AdminController implements AdminControllerInterface {
         MatchDAO matchDAO = new MatchDAO();
         ObjectMapper objectMapper = new ObjectMapper();
 
-        //pageDTO contains the list of games to be displayed
+        //get the list of games played by the users
         List<MatchDTO> list = matchDAO.browseGames(request.getDate1(), request.getDate2());
 
         try {
+            //convert the list of games into a JSON object
             String jsonResult = objectMapper.writeValueAsString(list);
-            System.out.println(jsonResult);
             //return HTTP response with JSON object with Code 200
             return new ResponseEntity<>(jsonResult, HttpStatus.OK);
 

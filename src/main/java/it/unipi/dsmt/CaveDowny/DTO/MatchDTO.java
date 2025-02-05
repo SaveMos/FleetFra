@@ -1,8 +1,8 @@
 package it.unipi.dsmt.CaveDowny.DTO;
 
-import java.sql.Timestamp;
 
 public class MatchDTO {
+    //attributes of the MatchDTO object
     private int id;
     private String user1;
     private String user2;

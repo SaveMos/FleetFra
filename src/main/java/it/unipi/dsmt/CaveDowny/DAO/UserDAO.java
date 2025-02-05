@@ -116,11 +116,12 @@ public class UserDAO extends BaseDAO {
     // and the number of users in the list
     public List<UserDTO> viewUsers(ViewUsersRequestDTO request, boolean includeStats) {
             List<UserDTO> entries = new ArrayList<>();
+            // Base query to select all users
             String baseQuery = "SELECT Username, Surname, Name, Email FROM FleetFra.user";
 
             List<String> conditions = new ArrayList<>();
             List<Object> parameters = new ArrayList<>();
-
+            // Add conditions to the query based on the request parameters
             if (request.getUsername() != null && !request.getUsername().isEmpty()) {
                 conditions.add("Username LIKE ?");
                 parameters.add(request.getUsername() + "%");  // Cerca valori che iniziano con il valore fornito
@@ -136,9 +137,9 @@ public class UserDAO extends BaseDAO {
 
             String finalQuery = baseQuery;
             if (!conditions.isEmpty()) {
+                // Append the WHERE clause to the query
                 finalQuery += " WHERE " + String.join(" AND ", conditions);
             }
-            //ResultSet resultSet = null;
             try (Connection connection = getConnection();
                  PreparedStatement preparedStatement = connection.prepareStatement(finalQuery)) {
 
@@ -147,6 +148,7 @@ public class UserDAO extends BaseDAO {
                 }
 
                 ResultSet resultSet = preparedStatement.executeQuery();
+                // Iterate over the result set and create a UserDTO object for each user
                 while (resultSet.next()) {
                     UserDTO userDTO = new UserDTO();
                     userDTO.setUsername(resultSet.getString("Username"));
@@ -167,6 +169,7 @@ public class UserDAO extends BaseDAO {
         }
 
         private void calculateUserStats (Connection conn, UserDTO user){
+            // Query to calculate the number of games played, won, and lost by the user
             String matchQuery = "SELECT COUNT(*) AS playedGames, " +
                     "SUM(CASE WHEN (User1 = ? AND Winner = 1) OR (User2 = ? AND Winner = 0) THEN 1 ELSE 0 END) AS winGames, " +
                     "SUM(CASE WHEN (User1 = ? AND Winner = 0) OR (User2 = ? AND Winner = 1) THEN 1 ELSE 0 END) AS lostGames " +

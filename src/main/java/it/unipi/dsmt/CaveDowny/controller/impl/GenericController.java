@@ -32,15 +32,16 @@ public class GenericController implements GenericControllerInterface {
     public ResponseEntity<ResponseRequest> login(@RequestBody UserAccessRequest requestUser) {
         //get the session
         session = SessionManagement.getInstance();
+        //check if the user is already logged and return an error
         if(session.isUserLogged(requestUser.getUsername()))
             return new ResponseEntity<>(new ResponseRequest("User already logged"), HttpStatus.FORBIDDEN);
 
-        System.out.println("Login request received: " + requestUser.getUsername() + " " + requestUser.getPassword());
         ResponseRequest responsereq;
 
         try {
             //verify the credentials
             UserDTO user = userDao.login(requestUser.getUsername(), requestUser.getPassword());
+            //if the user is not found or credentials are incorrect, return an error
             if (user == null) {
                 responsereq = new ResponseRequest("Wrong Username or Password inserted");
                 System.out.println("Login failed");
@@ -115,6 +116,7 @@ public class GenericController implements GenericControllerInterface {
         MatchDAO matchDAO = new MatchDAO();
 
         try {
+            //insert the match in the database
             if (!matchDAO.insert(match)) {
                 return new ResponseEntity<>("Error during the insert", HttpStatus.BAD_REQUEST);
             }
