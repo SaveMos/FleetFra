@@ -1,5 +1,5 @@
 -module(fleetfra_game).
--export([start_game/2 ,start_game_client/2, make_move/2 , get_game_info/1]).
+-export([start_game/2 ,start_game_client/2, make_move/2 , change_turn/1 , get_game_info/1]).
 -author("SaveMos").
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -197,6 +197,25 @@ battlefield_to_json(Battlefield) when is_list(Battlefield) ->
 cell_to_json(#{<<"row">> := Row, <<"col">> := Col, <<"value">> := Value}) ->
   #{<<"row">> => Row, <<"col">> => Col, <<"value">> => Value}.
 
+%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc
+%% Change the current turn.
+%% @param GameID The unique identifier for the game.
+%% @end
+%%-------------------------------------------------------------------
+
+change_turn(GameID) ->
+  case game_state_manager:get_game_state(GameID) of
+    {ok, GameState} ->
+      %% Use update_game_state to update the GameState
+      NewGameState = update_game_state_turn(GameState),
+      game_state_manager:put_game_state(GameID, NewGameState),
+      {ok, proceed};
+    {error, not_found} ->
+      {error, game_not_found}
+    end.
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -231,7 +250,8 @@ make_move(GameID, {Player, {Row, Col}}) ->
                       case GameState#game.winner of
                         PlayerAtom ->
                           {fin, winner};
-                        _ -> game_state_manager:delete_game_state(GameID),
+                        _ ->
+                          game_state_manager:delete_game_state(GameID),
                           {fin, loser}
                       end;
                     false ->
@@ -240,15 +260,13 @@ make_move(GameID, {Player, {Row, Col}}) ->
                         % Input check.
                         {ok , _} ->
                           %% Update the battlefield with the move
-                          UpdatedBattlefield = update_battlefield(PlayerBattlefield, Row, Col),
+                          {UpdatedBattlefield, NewValue} = update_battlefield(PlayerBattlefield, Row, Col),
 
                           %% Use update_game_state to update the GameState
-                          NewGameState = update_game_state(GameState, Player, UpdatedBattlefield),
+                          NewGameState = update_game_state(GameState, Player, UpdatedBattlefield , NewValue),
 
                           %% Save the new game state
                           game_state_manager:put_game_state(GameID, NewGameState),
-
-                          %io:format("REPORT: Match state [~p] -> # ~p # ~n", [NewGameState#game.game_over , NewGameState#game.winner]),
 
                           case NewGameState#game.game_over of
                             % The game is ended.
@@ -261,7 +279,7 @@ make_move(GameID, {Player, {Row, Col}}) ->
                                   {fin, loser}
                               end;
                             _ ->
-                              {ok, ok_move}
+                              {ok, NewValue}
                           end;
                         {error , out_of_bounds} ->
                           {error, out_of_bound_coordinates};
@@ -333,43 +351,48 @@ check_move_coordinates(Row, Col) ->
 %% @param Row The row index of the cell to update.
 %% @param Col The column index of the cell to update.
 %% @param NewValue The new value to set at the specified cell.
-%% @return The updated battlefield.
+%% @return The updated battlefield and the new value of the hit cell..
 %%-------------------------------------------------------------------
 
 update_battlefield(Battlefield, Row, Col) ->
-  [case Cell of
-     #{<<"row">> := RowIndex, <<"col">> := ColIndex} when RowIndex == Row andalso ColIndex == Col ->
-       %% Determine the new value for the cell
-       NewValue = case Cell of
-                    #{<<"value">> := 0} -> 3;  %% If water is hit (0 -> Untouched water)
-                    #{<<"value">> := 1} -> 2;  %% If the ship is not hit (1 -> Ship not hit)
-                    #{<<"value">> := 2} -> 2;  %% If the ship is hit (2 -> Ship hit, remains unchanged)
-                    #{<<"value">> := 3} -> 3;  %% If water is already hit (3 -> Water hit, remains unchanged)
-                    _ -> 0  %% Any other unexpected value is untouched water
-                  end,
-       %% Check if the cell is adjacent to a hit ship (-1 for adjacent water)
-       case check_adjacent_to_shot(Battlefield, Row, Col) of
-         true -> Cell#{<<"value">> => -1};  %% If the cell is adjacent to a hit ship, set it to -1
-         false -> Cell#{<<"value">> => NewValue}  %% Otherwise, set the value as determined
-       end;
+  %% Update the battlefield
+  NewBattlefield = [ case Cell of
+                       #{<<"row">> := RowIndex, <<"col">> := ColIndex}
+                         when RowIndex == Row andalso ColIndex == Col ->
+                         %% Determine the new value of the cell
+                         NewValue0 = case Cell of
+                                       #{<<"value">> := -1} -> 3;  %% Untouched water -> hit water
+                                       #{<<"value">> := 0} -> 3;  %% Untouched water -> hit water
+                                       #{<<"value">> := 1} -> 2;  %% Ship not hit -> ship hit
+                                       #{<<"value">> := 2} -> 2;  %% Ship already hit -> remains unchanged
+                                       #{<<"value">> := 3} -> 3;  %% Water already hit -> remains unchanged
+                                       _ -> 0  %% Default case: untouched water
+                                     end,
+                         %% Check if the cell is adjacent to a hit ship (-1 for adjacent water)
+                         %NewValue = case check_adjacent_to_shot(Battlefield, Row, Col) of
+                                     % true -> -1;
+                                     % false -> NewValue0
+                                    %end,
+                         %% Update the cell with the new value
+                         Cell#{<<"value">> => NewValue0};
+                       _ ->
+                         Cell  %% Leave other cells unchanged
+                     end || Cell <- Battlefield],
+  %% Retrieve the new value of the updated cell
+  NewValue = case lists:filter(
+    fun(Cell) ->
+      case Cell of
+        #{<<"row">> := RowIndex, <<"col">> := ColIndex} ->
+          RowIndex == Row andalso ColIndex == Col;
+        _ ->
+          false
+      end
+    end, NewBattlefield) of
+               [UpdatedCell|_] -> maps:get(<<"value">>, UpdatedCell);
+               [] -> undefined
+             end,
+  {NewBattlefield, NewValue}.
 
-     _ -> Cell  %% Leave other cells unchanged
-   end || Cell <- Battlefield].
-
-%%-------------------------------------------------------------------
-%% @author SaveMos
-%% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Function that checks if a cell is adjacent to a hit ship
-%%-------------------------------------------------------------------
-check_adjacent_to_shot(Battlefield, Row, Col) ->
-  %% Checks the adjacent cells (diagonal, horizontal, vertical)
-  lists:any(fun(Cell) ->
-    case Cell of
-      #{<<"row">> := R, <<"col">> := C, <<"value">> := 2} when abs(R - Row) =< 1 andalso abs(C - Col) =< 1 -> true;
-      _ -> false
-    end
-            end, Battlefield).
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -381,15 +404,12 @@ check_adjacent_to_shot(Battlefield, Row, Col) ->
 %% @param NewBattlefield The updated battlefield of the player.
 %% @return The updated game state.
 %%-------------------------------------------------------------------
-update_game_state(GameState, Player, NewBattlefield) ->
+update_game_state(GameState, Player, NewBattlefield, NewValue) ->
   %% Convert Player to an atom if it's a binary
   PlayerAtom = bin_to_atom(Player),
 
   %% Update the battlefields map with the correct key (PlayerAtom)
   NewBattlefields = maps:put(PlayerAtom, NewBattlefield, GameState#game.battlefields),
-
-  %% Switch the turn
-  NewTurn = GameState#game.waiting_player,
 
   %% Get the current player's battlefield
   PlayerBattlefield = maps:get(PlayerAtom, NewBattlefields),
@@ -403,8 +423,31 @@ update_game_state(GameState, Player, NewBattlefield) ->
              _ -> none
            end,
 
+  case {NewValue,GameOver} of
+    {2 , false } ->
+      NewTurn = GameState#game.current_turn,
+      OldTurn = GameState#game.waiting_player;
+    {3 , false} ->
+      NewTurn = GameState#game.waiting_player,
+      OldTurn = GameState#game.current_turn;
+    {_ , true} ->
+      NewTurn = GameState#game.waiting_player,
+      OldTurn = GameState#game.current_turn;
+    _ ->
+      NewTurn = GameState#game.waiting_player,
+      OldTurn = GameState#game.current_turn
+  end,
+
   %% Return the updated GameState
-  GameState#game{battlefields = NewBattlefields, current_turn = NewTurn , waiting_player = PlayerAtom, game_over = GameOver, winner = Winner, created_at = erlang:system_time(second)}.
+  GameState#game{battlefields = NewBattlefields, current_turn = NewTurn , waiting_player = OldTurn, game_over = GameOver, winner = Winner, created_at = erlang:system_time(second)}.
+
+
+update_game_state_turn(GameState) ->
+  PlayerAtom = GameState#game.current_turn,
+  NewTurn = GameState#game.waiting_player,
+  %% Return the updated GameState
+  GameState#game{current_turn = NewTurn , waiting_player = PlayerAtom, created_at = erlang:system_time(second)}.
+
 
 %%-------------------------------------------------------------------
 %% @author SaveMos

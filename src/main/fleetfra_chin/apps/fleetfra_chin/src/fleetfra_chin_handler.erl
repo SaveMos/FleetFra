@@ -49,6 +49,12 @@ process_request(Body) ->
             fleetfra_game:start_game_client(GameID, {Player, Battlefield}),
             build_response(<<"OK: Game started">>);
 
+        <<"change_turn">> ->
+            case fleetfra_game:change_turn(GameID) of
+                {ok, proceed} -> build_response(<<"OK: Turn changed">>);
+                {error, game_not_found} -> build_response(<<"ERROR: Game not found">>)
+            end;
+
         <<"get_game_info">> ->
             case fleetfra_game:get_game_info(GameID) of
                 {ok, JsonResponse} -> JsonResponse;
@@ -61,7 +67,7 @@ process_request(Body) ->
             Row = maps:get(<<"row">>, Move),
             Col = maps:get(<<"col">>, Move),
             case fleetfra_game:make_move(GameID, {Player, {Row, Col}}) of
-                {ok, _} -> build_response(<<"OK: Move accepted">>);
+                {ok, NewValue} -> build_response(<<"OK: Move accepted [", (integer_to_binary(NewValue))/binary, "]">>);
                 {error, invalid_move} -> build_response(<<"Invalid move">>);
                 {error, out_of_bound_coordinates} -> build_response(<<"INVALID MOVE: Out of bound coordinates">>);
                 {error, not_integer} -> build_response(<<"INVALID MOVE: Coordinates must be integers">>);

@@ -192,7 +192,7 @@ public class TestFleetFraChinWebSocket {
         String gameID = FleetFraChinExecution.generateRandomString(20);
         String player1FinalState = "";
         String player2FinalState = "";
-        String currentPlayer;
+        String currentPlayer, otherPlayer;
         String requestJson, responseJson;
 
         Random rand = new Random();
@@ -201,12 +201,12 @@ public class TestFleetFraChinWebSocket {
 
         // STARTING GAME TEST
         sendAndAwaitResponse(
-                FleetFraChinExecution.createStartGameRequestClient(gameID, PLAYER1_ID ,player1Battlefield),
+                FleetFraChinExecution.createStartGameRequestClient(gameID, PLAYER2_ID ,player2Battlefield),
                 "{\"message\":\"OK: Game started\"}"
         );
 
         sendAndAwaitResponse(
-                FleetFraChinExecution.createStartGameRequestClient(gameID, PLAYER2_ID ,player2Battlefield),
+                FleetFraChinExecution.createStartGameRequestClient(gameID, PLAYER1_ID ,player1Battlefield),
                 "{\"message\":\"OK: Game started\"}"
         );
 
@@ -220,8 +220,10 @@ public class TestFleetFraChinWebSocket {
         }
 
         int turn = 0;
+        currentPlayer = PLAYER2_ID;
+        otherPlayer = PLAYER1_ID;
+
         while (true) {
-            currentPlayer = (turn % 2 == 0) ? PLAYER1_ID : PLAYER2_ID;
             int row, col;
             if (currentPlayer.equals(PLAYER1_ID) && !player2ShipPositions.isEmpty()) {
                 // Player1 hits positions of player2's ships without missing
@@ -241,25 +243,50 @@ public class TestFleetFraChinWebSocket {
             responseJson = sendAndAwaitResponse(requestJson);
 
             switch (responseJson) {
-                case "{\"message\":\"OK: Move accepted\"}" -> System.out.println(currentPlayer + " has played.");
+                case "{\"message\":\"OK: Move accepted [3]\"}" -> {
+                    String temp = currentPlayer;
+                    currentPlayer = otherPlayer;
+                    otherPlayer = temp;
+                    System.out.println(currentPlayer + " has played.");
+                }
+
+                case "{\"message\":\"OK: Move accepted [2]\"}" -> {
+                    System.out.println(currentPlayer + " has played.");
+                }
+
+                case "{\"message\":\"TURN ERROR: Not your turn\"}" -> {
+                    System.out.println(currentPlayer + " not his turn.");
+                }
 
                 // Check if the game has ended (e.g., "VICTORY" or "DEFEAT" directly from the response)
                 case "{\"message\":\"VICTORY\"}" -> {
                     if (currentPlayer.equals(PLAYER1_ID)) {
                         player1FinalState = "VICTORY";  // Player1 won
                         System.out.println(currentPlayer + " won.");
+                        String temp = currentPlayer;
+                        currentPlayer = otherPlayer;
+                        otherPlayer = temp;
                     } else {
                         player2FinalState = "VICTORY";  // Player2 won
                         System.out.println(currentPlayer + " won.");
+                        String temp = currentPlayer;
+                        currentPlayer = otherPlayer;
+                        otherPlayer = temp;
                     }
                 }
                 case "{\"message\":\"DEFEAT\"}" -> {
                     if (currentPlayer.equals(PLAYER1_ID)) {
                         player1FinalState = "DEFEAT";  // Player1 lost
                         System.out.println(currentPlayer + " lost.");
+                        String temp = currentPlayer;
+                        currentPlayer = otherPlayer;
+                        otherPlayer = temp;
                     } else {
                         player2FinalState = "DEFEAT";  // Player2 lost
                         System.out.println(currentPlayer + " lost.");
+                        String temp = currentPlayer;
+                        currentPlayer = otherPlayer;
+                        otherPlayer = temp;
                     }
                 }
                 case null -> throw new IllegalStateException("Null value");
@@ -270,11 +297,8 @@ public class TestFleetFraChinWebSocket {
                     (player2FinalState.equals("VICTORY") || player2FinalState.equals("DEFEAT"))){
                 break;  // End the game if both players have a final state (either victory or defeat)
             }
-
             turn++; // Proceed to the next turn
         }
-
-
     }
 
     /**
