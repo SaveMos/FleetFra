@@ -170,9 +170,11 @@ function changeOpponentGrid(activate){
 
             if(row !== 0 && col !== 0) {
                 if(activate) {
-                    currentCell.addEventListener("mouseover", changeCell);
-                    currentCell.addEventListener("mouseout", restoreCell);
-                    currentCell.addEventListener("click", shoot);
+                    if((!currentCell.classList.contains("unavailable")) && (!currentCell.classList.contains("sink"))) {
+                        currentCell.addEventListener("mouseover", changeCell);
+                        currentCell.addEventListener("mouseout", restoreCell);
+                        currentCell.addEventListener("click", shoot);
+                    }
                 }else{
                     currentCell.removeEventListener("mouseover", changeCell);
                     currentCell.removeEventListener("mouseout", restoreCell);

@@ -68,9 +68,69 @@ function sendMoveMessage(row, col) {
     }
 }
 
+function sendGetGameMessage(){
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+
+        const getGameData = {
+            type_request: "get_game_info",
+            game_id: game_id
+        };
+
+       let message = JSON.stringify(getGameData, null, 2);
+
+        setTimeout(function() {
+            socket.send(message);
+        }, 1000);
+
+        console.log("Message sent:", message);
+    } else {
+        console.error("WebSocket is not open.");
+    }
+}
+
 // Funzione per gestire i messaggi ricevuti dal server
-function handleServerMessage(message) {
-    console.log("Handling message:", message);
+function handleServerMessage(serverMessage) {
+    console.log("Handling message:", serverMessage);
+    try {
+        const message = JSON.parse(serverMessage);
+
+        if (!message.message) {
+            console.log("GET GAME jSON");
+
+
+        }else {
+
+            const responseMessage = message.message;
+            // case-insensitive check
+            if (/error/i.test(responseMessage) || /invalid/i.test(responseMessage)) {
+                console.log("Error: ", responseMessage);
+                //MOSTRARE ERRORE E REFRESH PAGINA
+                return;
+            }
+
+            switch (responseMessage) {
+                case "OK: Game started":
+                    console.log("OK: Game started");
+                    sendGetGameMessage();
+                    break;
+                case "OK: Move accepted":
+                    console.log("Move accepted");
+                    sendGetGameMessage();
+                    break;
+                case "VICTORY":
+                    console.log("Congratulations! You won!");
+                    break;
+                case "DEFEAT":
+                    console.log("Game over. You lost.");
+                    break;
+                default:
+                    console.log("Unknown message");
+            }
+        }
+    } catch (error) {
+        console.error("Error parsing JSON message:", error);
+    }
 
 }
 
@@ -115,8 +175,10 @@ function createBattlefieldJson(matrix) {
 
     const battlefieldData = {
         game_id: game_id,
-        player_battlefield: battlefield,
-        player: player_username
+        player: player_username,
+        type_request: "start_game_client",
+        player_battlefield: battlefield
+
     };
 
     return JSON.stringify(battlefieldData, null, 2);
