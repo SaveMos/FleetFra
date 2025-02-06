@@ -71,7 +71,7 @@ async function sendStart(){
             }, 2000);
 
             changeUserGrid();
-            changeOpponentGrid(true);
+            //changeOpponentGrid(true);
             startGameButton.disabled = true;
             initializeWebSocket(jsonResponse.matchId, playerGrid);
 
