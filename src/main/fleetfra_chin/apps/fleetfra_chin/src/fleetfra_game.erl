@@ -1,23 +1,24 @@
 -module(fleetfra_game).
 -export([start_game/2 ,start_game_client/2, make_move/2 , change_turn/1 , get_game_info/1]).
 -author("SaveMos").
-%%-------------------------------------------------------------------
+%%===============================================================================%%
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
 %% Starts a new game by storing the initial game state and the players' battlefields.
-%% The game state includes the game ID, the players' names, their battlefields, the current turn, and whether the game is over.
+%% The game state includes the game ID, the players' names, their battlefields,
+%% the current turn, and whether the game is over.
 %% @param GameID The unique identifier for the game.
 %% @param {Player1, Player2, Battlefield1, Battlefield2} A tuple containing the players' names and their battlefields.
 %% @end
-%%-------------------------------------------------------------------
+%%===============================================================================%%
 -record(game, {game_id, player1 , player2, battlefields, current_turn, waiting_player ,game_over, winner, created_at , init_complete}).
 
 start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}) ->
   %% Initialize ETS table
   init_ets(),
-  PlayerAtom1 = bin_to_atom(Player1),
-  PlayerAtom2 = bin_to_atom(Player2),
+  PlayerAtom1 = utility:bin_to_atom(Player1),
+  PlayerAtom2 = utility:bin_to_atom(Player2),
 
   %% Create the initial game state using the correct map syntax
   GameState = #game{
@@ -56,25 +57,22 @@ start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}) ->
 
 start_game_client(GameID, {Player, Battlefield}) ->
   init_ets(), %% Initialize the ETS table.
-  PlayerAtom = bin_to_atom(Player), % The player that made this request.
+  PlayerAtom = utility:bin_to_atom(Player), % The player that made this request.
 
   case game_state_manager:get_game_state(GameID) of
     {ok, GameState} ->
       % Phase 2 - The second player send the final information.
       NewBattlefields = maps:put(PlayerAtom, Battlefield, GameState#game.battlefields),
-
       Player1 = GameState#game.player1,
       Player2 = PlayerAtom,
       Battlefield1 = maps:get(Player1, NewBattlefields),
       Battlefield2 = maps:get(Player2, NewBattlefields),
-
       % Swap the battlefields.
       % Battlefield1 is the field where Player1 shoots.
       SwappedBattlefields = NewBattlefields#{
         Player1 => Battlefield2,
         Player2 => Battlefield1
       },
-
       NewGameState = GameState#game{
         battlefields = SwappedBattlefields,
         player2 = PlayerAtom,
@@ -84,7 +82,6 @@ start_game_client(GameID, {Player, Battlefield}) ->
         created_at = erlang:system_time(second),
         init_complete = true
       },
-      %io:format("Fase 2 OK. ~p ~n" , [PlayerAtom]),
       game_state_manager:put_game_state(GameID, NewGameState),  % Store the game state in the ETS.
       {ok, NewGameState};
 
@@ -102,23 +99,10 @@ start_game_client(GameID, {Player, Battlefield}) ->
         created_at = erlang:system_time(second),
         init_complete = false
       },
-      %io:format("Fase 1 OK. ~p ~n" , [PlayerAtom]),
       game_state_manager:put_game_state(GameID, GameState),  % Store the game state in the ETS.
       {ok, GameState}
   end.
 
-%%-------------------------------------------------------------------
-%% @author SaveMos
-%% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Cast a binary object into an atom.
-%% @end
-%%-------------------------------------------------------------------
-bin_to_atom(Bin) ->
-  case is_binary(Bin) of
-      true -> binary_to_atom(Bin, utf8);
-      false -> Bin
-  end.
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -229,15 +213,12 @@ change_turn(GameID) ->
 %% @end
 %%-------------------------------------------------------------------
 make_move(GameID, {Player, {Row, Col}}) ->
-  PlayerAtom = bin_to_atom(Player),
-  %io:format("#######################################################################################~n"),
-  %io:format("~p ~n" , [PlayerAtom]),
-  %io:format("#######################################################################################~n"),
-
+  PlayerAtom = utility:bin_to_atom(Player),
   case game_state_manager:get_game_state(GameID) of
     {ok, GameState} ->
       case GameState#game.current_turn of
         PlayerAtom ->
+          WaitingPlayerAtom = GameState#game.waiting_player,
           %io:format("OK: ~p can play!~n" , [PlayerAtom]),
           case maps:find(PlayerAtom, GameState#game.battlefields) of
             {ok, PlayerBattlefield} ->
@@ -249,9 +230,10 @@ make_move(GameID, {Player, {Row, Col}}) ->
                       % The game is already ended, so the other player won.
                       case GameState#game.winner of
                         PlayerAtom ->
-                          {fin, winner};
+                          {fin, winner, WaitingPlayerAtom};
                         _ ->
                           game_state_manager:delete_game_state(GameID),
+                          websocket_manager:remove_pid(GameID, Player),
                           {fin, loser}
                       end;
                     false ->
@@ -261,25 +243,23 @@ make_move(GameID, {Player, {Row, Col}}) ->
                         {ok , _} ->
                           %% Update the battlefield with the move
                           {UpdatedBattlefield, NewValue} = update_battlefield(PlayerBattlefield, Row, Col),
-
                           %% Use update_game_state to update the GameState
                           NewGameState = update_game_state(GameState, Player, UpdatedBattlefield , NewValue),
-
                           %% Save the new game state
                           game_state_manager:put_game_state(GameID, NewGameState),
-
                           case NewGameState#game.game_over of
                             % The game is ended.
                             true ->
                               case NewGameState#game.winner of
                                 PlayerAtom ->
-                                  {fin, winner};
+                                  {fin, winner, WaitingPlayerAtom};
                                 _ ->
                                   game_state_manager:delete_game_state(GameID),
+                                  websocket_manager:remove_pid(GameID, Player),
                                   {fin, loser}
                               end;
                             _ ->
-                              {ok, NewValue}
+                              {ok, NewValue, WaitingPlayerAtom}
                           end;
                         {error , out_of_bounds} ->
                           {error, out_of_bound_coordinates};
@@ -291,20 +271,17 @@ make_move(GameID, {Player, {Row, Col}}) ->
                   {error , game_not_initiated}
               end;
               error ->
-                %io:format("ERROR: ~p battlefield not found!~n"  , [PlayerAtom]),
                 {error, player_not_found}
           end;
        _ ->
           case GameState#game.waiting_player of
             PlayerAtom ->
-              %io:format("ERROR: ~p can't play yet!~n" , [PlayerAtom]),
               {error, not_your_turn}; %% It's not their turn.
             _ ->
               {error, player_not_found} % The player does not exists.
           end
       end;
     {error, not_found} ->
-      %io:format("ERROR: Can't find the match ~p~n", [GameID]),
       {error, game_not_found}
   end.
 
@@ -368,11 +345,6 @@ update_battlefield(Battlefield, Row, Col) ->
                                        #{<<"value">> := 3} -> 3;  %% Water already hit -> remains unchanged
                                        _ -> 0  %% Default case: untouched water
                                      end,
-                         %% Check if the cell is adjacent to a hit ship (-1 for adjacent water)
-                         %NewValue = case check_adjacent_to_shot(Battlefield, Row, Col) of
-                                     % true -> -1;
-                                     % false -> NewValue0
-                                    %end,
                          %% Update the cell with the new value
                          Cell#{<<"value">> => NewValue0};
                        _ ->
@@ -406,7 +378,7 @@ update_battlefield(Battlefield, Row, Col) ->
 %%-------------------------------------------------------------------
 update_game_state(GameState, Player, NewBattlefield, NewValue) ->
   %% Convert Player to an atom if it's a binary
-  PlayerAtom = bin_to_atom(Player),
+  PlayerAtom = utility:bin_to_atom(Player),
 
   %% Update the battlefields map with the correct key (PlayerAtom)
   NewBattlefields = maps:put(PlayerAtom, NewBattlefield, GameState#game.battlefields),
@@ -437,7 +409,6 @@ update_game_state(GameState, Player, NewBattlefield, NewValue) ->
       NewTurn = GameState#game.waiting_player,
       OldTurn = GameState#game.current_turn
   end,
-
   %% Return the updated GameState
   GameState#game{battlefields = NewBattlefields, current_turn = NewTurn , waiting_player = OldTurn, game_over = GameOver, winner = Winner, created_at = erlang:system_time(second)}.
 

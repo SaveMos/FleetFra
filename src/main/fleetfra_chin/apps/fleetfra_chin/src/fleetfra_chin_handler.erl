@@ -1,7 +1,12 @@
 -module(fleetfra_chin_handler).
 -behaviour(cowboy_handler).
 -author("SaveMos").
--export([init/2 , process_request/1 , parse_json/1 , build_response/1]).
+-export([
+    init/2 ,
+    process_request/1 ,
+    parse_json/1 ,
+    build_response/1, build_response/4
+]).
 
 %%==============================================================================%%
 %% @author SaveMos
@@ -31,7 +36,7 @@ init(Req, State) ->
 %% @return A JSON-encoded response.
 %%-------------------------------------------------------------------
 process_request(Body) ->
-    ParsedJson = parse_json({jsx , Body}),
+    ParsedJson = parse_json(Body),
     GameID = maps:get(<<"game_id">>, ParsedJson),
     TypeRequest = maps:get(<<"type_request">>, ParsedJson),
     case TypeRequest of
@@ -67,7 +72,7 @@ process_request(Body) ->
             Row = maps:get(<<"row">>, Move),
             Col = maps:get(<<"col">>, Move),
             case fleetfra_game:make_move(GameID, {Player, {Row, Col}}) of
-                {ok, NewValue} -> build_response(<<"OK: Move accepted [", (integer_to_binary(NewValue))/binary, "]">>);
+                {ok, NewValue, WaitingPlayerAtom} -> build_response(<<"OK: Move accepted [", (integer_to_binary(NewValue))/binary, "]">> , GameID , Player, WaitingPlayerAtom);
                 {error, invalid_move} -> build_response(<<"Invalid move">>);
                 {error, out_of_bound_coordinates} -> build_response(<<"INVALID MOVE: Out of bound coordinates">>);
                 {error, not_integer} -> build_response(<<"INVALID MOVE: Coordinates must be integers">>);
@@ -75,7 +80,7 @@ process_request(Body) ->
                 {error, player_not_found} -> build_response(<<"ERROR: Player not found">>);
                 {error, game_not_found} -> build_response(<<"ERROR: Game not found">>);
                 {error , game_not_initiated} -> build_response(<<"ERROR: Game found but not initiated">>);
-                {fin, winner} -> build_response(<<"VICTORY">>);
+                {fin, winner, WaitingPlayerAtom} -> build_response(<<"VICTORY">> , GameID , Player,WaitingPlayerAtom);
                 {fin, loser} -> build_response(<<"DEFEAT">>)
             end;
         _ -> build_response(<<"Unknown request type">>)
@@ -85,26 +90,23 @@ process_request(Body) ->
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
-%% Parses the incoming JSON request body and returns a map.
+%% Parses the incoming JSON (using JSX) request body and returns a map.
 %% @end
 %% @param Body The JSON body of the request.
 %% @return A map representing the parsed JSON.
 %%-------------------------------------------------------------------
-parse_json({jsx , Body}) ->
-    %% Assume JSON parsing succeeds using JSX.
+parse_json(Body) ->
     jsx:decode(Body, [{return_maps, true}]);
-parse_json({jiffy , Body}) ->
-    %% Assume JSON parsing succeeds using JSX.
-    jiffy:decode(Body).
+parse_json({jsx , Body}) ->
+    jsx:decode(Body, [{return_maps, true}]).
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Builds a JSON response string to send back to the client.
-%% @end
+%% @doc Builds a JSON response string to send back to the client.
 %% @param Message The message to include in the response.
 %% @return The JSON-encoded response.
+%% @end
 %%-------------------------------------------------------------------
 
 build_response(Message) ->
@@ -113,12 +115,50 @@ build_response(Message) ->
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Decode a MAP into a JSON message.
+%% @doc Builds a JSON response string to send back to both the players.
+%% @param Message The message to include in the response.
+%% @param GameID The unique gam identifier.
+%% @param CurrentPlayer The current playing player.
+%% @return The JSON-encoded response.
+%% @end
+%%-------------------------------------------------------------------
+
+build_response(Message, GameID, CurrentPlayer, WaitingPlayer) ->
+    Response = decode_json(Message),
+    PlayerAtom = utility:bin_to_atom(CurrentPlayer),
+    send_update_to_other_player(GameID , PlayerAtom, WaitingPlayer , Response),
+    Response.
+
+
+%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc Decode a MAP into a JSON message using the JSX library.
+%% @param Message The message to include in the response.
 %% @end
 %%-------------------------------------------------------------------
 
 decode_json(Message) ->
-    %% Encode response using JSX
     jsx:encode(#{<<"message">> => Message}).
 
+%%------------------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc Sends a game update to the opponent player.
+%% @param GameID The unique gam identifier.
+%% @param CurrentPlayer The current playing player.
+%% @param GameState The current game state.
+%% @end
+%%------------------------------------------------------------------------------
+
+send_update_to_other_player(GameID, CurrentPlayer, WaitingPlayer, Response) ->
+    case websocket_manager:get_opponent_pid(GameID, CurrentPlayer, WaitingPlayer) of
+        {ok, OtherPid} when is_pid(OtherPid) ->
+            io:format("Sending update to opponent PID: ~p~n", [OtherPid]),
+            OtherPid ! {game_update, Response},
+            %gen_server:cast(OtherPid, {game_update, Response}),
+            io:format("Message sent to opponent: ~p~n", [Response]);
+        _ ->
+            io:format("Failed to find opponent PID for ~p~n", [CurrentPlayer]),
+            ok
+    end.

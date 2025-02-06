@@ -125,6 +125,34 @@ public class FleetFraChinExecution {
         return battlefield;
     }
 
+    public static List<Map<String, Integer>> generateBattlefield(boolean zero) {
+        List<Map<String, Integer>> battlefield = new ArrayList<>();
+        int[][] grid = new int[ROWS][COLS];
+
+        // Initialize battlefield with empty cells
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                battlefield.add(new HashMap<>(Map.of("row", row, "col", col, "value", 0)));
+            }
+        }
+
+        // Place ships randomly
+        for (int length : SHIP_LENGTHS) {
+            placeShipRandomly(grid, length);
+        }
+
+        // Update battlefield based on grid
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                if (grid[row][col] == 1 && !zero) {
+                    setCell(battlefield, row, col);
+                }
+            }
+        }
+
+        return battlefield;
+    }
+
     private static void placeShipRandomly(int[][] grid, int length) {
         boolean placed = false;
 
