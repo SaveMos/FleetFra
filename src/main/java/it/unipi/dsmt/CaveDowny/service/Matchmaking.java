@@ -1,5 +1,6 @@
 package it.unipi.dsmt.CaveDowny.service;
 
+// Matchmaking class: stores the player1, player2 and matchId of a match to manage the matchmaking
 public class Matchmaking {
     String player1;
     String player2;

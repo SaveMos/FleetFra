@@ -18,16 +18,18 @@ public class UserService {
     public ArrayList<String> handleGame(String request, HashMap<String, Matchmaking> waitingQueue) {
         // Check if there is already a player waiting in the queue
         Matchmaking match;
-        boolean matchFound = false;
+        boolean matchFound;
+        // Check if there is already a player waiting in the queue
+        //synchronized is used to avoid multiple threads accessing the same data structure
         synchronized (waitingQueue) {
             matchFound = !waitingQueue.isEmpty();
         }
         if (matchFound) {
             // Match the requester with the waiting player
+            //every access to the waitingQueue is synchronized
             synchronized (waitingQueue) {
                 match = waitingQueue.values().iterator().next();
             }
-
 
             match.player2 = request;
 
@@ -35,7 +37,6 @@ public class UserService {
             synchronized (match) {
                 match.notify();
             }
-
 
             // Return the match details
             ArrayList<String> ret = new ArrayList<>();
@@ -53,7 +54,6 @@ public class UserService {
                 waitingQueue.put(matchId, new Matchmaking(request, null, matchId));
                 match = waitingQueue.get(matchId);
             }
-
 
             System.out.println("Added to waiting queue: " + request);
 

@@ -60,29 +60,18 @@ public class MatchDAO extends  BaseDAO{
         String insertQuery = "INSERT INTO FleetFra.match" +
                 "(User1, User2, Timestamp, Winner) " +
                 "VALUES (?, ?, ?, ?)";
-
+        //prepare the statement
         try (Connection connection = getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            //fill the statement with the data from the match object
             preparedStatement.setString(1, match.getUser1());
             preparedStatement.setString(2, match.getUser2());
             preparedStatement.setString(3, match.getTimestamp());
-            //controllare se problemi perché formato stringa inserito nel db che tiene un int
             preparedStatement.setString(4, match.getWinner());
-
+            //run the query
             int rowsAffected = preparedStatement.executeUpdate();
 
-            if (rowsAffected > 0) {
-                // Get the automatically generated ID
-                try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        int generatedId = generatedKeys.getInt(1);
-                        match.setId(generatedId);
-                    }
-                }
-                return true;
-            } else {
-                return false;
-            }
+            return rowsAffected > 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
             return false;
