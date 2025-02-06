@@ -233,7 +233,6 @@ make_move(GameID, {Player, {Row, Col}}) ->
                           {fin, winner, WaitingPlayerAtom};
                         _ ->
                           game_state_manager:delete_game_state(GameID),
-                          websocket_manager:remove_pid(GameID, Player),
                           {fin, loser}
                       end;
                     false ->
@@ -255,7 +254,6 @@ make_move(GameID, {Player, {Row, Col}}) ->
                                   {fin, winner, WaitingPlayerAtom};
                                 _ ->
                                   game_state_manager:delete_game_state(GameID),
-                                  websocket_manager:remove_pid(GameID, Player),
                                   {fin, loser}
                               end;
                             _ ->

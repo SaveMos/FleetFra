@@ -41,7 +41,6 @@ start(_StartType, _StartArgs) ->
     #{env => #{dispatch => Dispatch}}
   ),
 
-  game_state_manager:start_link(), %% Starts the ETS manager.
   websocket_manager:start_link(),  %% Starts the ETS manager.
   fleetfra_chin_sup:start_link().  %% Starts the supervisor.
 

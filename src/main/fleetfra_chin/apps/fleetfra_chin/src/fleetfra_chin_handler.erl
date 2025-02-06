@@ -140,25 +140,3 @@ build_response(Message, GameID, CurrentPlayer, WaitingPlayer) ->
 
 decode_json(Message) ->
     jsx:encode(#{<<"message">> => Message}).
-
-%%------------------------------------------------------------------------------
-%% @author SaveMos
-%% @copyright (C) 2025, <FleetFra>
-%% @doc Sends a game update to the opponent player.
-%% @param GameID The unique gam identifier.
-%% @param CurrentPlayer The current playing player.
-%% @param GameState The current game state.
-%% @end
-%%------------------------------------------------------------------------------
-
-send_update_to_other_player(GameID, CurrentPlayer, WaitingPlayer, Response) ->
-    case websocket_manager:get_opponent_pid(GameID, CurrentPlayer, WaitingPlayer) of
-        {ok, OtherPid} when is_pid(OtherPid) ->
-            io:format("Sending update to opponent PID: ~p~n", [OtherPid]),
-            OtherPid ! {game_update, Response},
-            %gen_server:cast(OtherPid, {game_update, Response}),
-            io:format("Message sent to opponent: ~p~n", [Response]);
-        _ ->
-            io:format("Failed to find opponent PID for ~p~n", [CurrentPlayer]),
-            ok
-    end.
