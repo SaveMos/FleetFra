@@ -10,7 +10,7 @@
 -author("Saverio").
 
 %% API
--export([bin_to_atom/1, to_str/1]).
+-export([bin_to_atom/1, to_str/1, concat_game_player/2]).
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -20,14 +20,21 @@
 %% @end
 %%-------------------------------------------------------------------
 bin_to_atom(Bin) ->
-  case is_binary(Bin) of
-    true -> binary_to_atom(Bin, utf8);
+  case erlang:is_binary(Bin) of
+    true -> erlang:binary_to_atom(Bin, utf8);
     false -> Bin
   end.
 
-to_str(Input) when is_binary(Input) ->
+to_str(Input) when erlang:is_binary(Input) ->
   % Se l'input è un binary, usa erlang:binary_to_list/1 per convertirlo in una lista di caratteri
   binary:bin_to_list(Input);
-to_str(Input) when is_atom(Input) ->
+to_str(Input) when erlang:is_list(Input) ->
+  % Se l'input è un binary, usa erlang:binary_to_list/1 per convertirlo in una lista di caratteri
+  Input;
+to_str(Input) when erlang:is_atom(Input) ->
   % Se l'input è un atomo, usa atom_to_list/1 per convertirlo in una lista di caratteri
-  atom_to_list(Input).
+  erlang:atom_to_list(Input).
+
+%% @doc Concatenates GameID and PlayerID to create a unique process name.
+concat_game_player(GameID, PlayerID)  ->
+  list_to_atom(to_str(GameID) ++ "_" ++ to_str(PlayerID)).

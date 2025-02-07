@@ -125,8 +125,8 @@ build_response(Message) ->
 
 build_response(Message, GameID, CurrentPlayer, WaitingPlayer) ->
     Response = decode_json(Message),
-    PlayerAtom = utility:bin_to_atom(CurrentPlayer),
-    send_update_to_other_player(GameID , PlayerAtom, WaitingPlayer , Response),
+    %PlayerAtom = utility:bin_to_atom(CurrentPlayer),
+    %send_update_to_other_player(GameID , PlayerAtom, WaitingPlayer , Response),
     Response.
 
 
@@ -140,3 +140,27 @@ build_response(Message, GameID, CurrentPlayer, WaitingPlayer) ->
 
 decode_json(Message) ->
     jsx:encode(#{<<"message">> => Message}).
+
+%%------------------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc Sends a game update to the opponent player.
+%% @param GameID The unique gam identifier.
+%% @param CurrentPlayer The current playing player.
+%% @param GameState The current game state.
+%% @end
+%%------------------------------------------------------------------------------
+
+send_update_to_other_player(GameID, CurrentPlayer, WaitingPlayer, Response) ->
+    Name = utility:concat_game_player(GameID, WaitingPlayer),
+    case erlang:whereis(Name) of
+        undefined ->
+            io:format("Failed to find opponent PID for ~p~n", [CurrentPlayer]),
+            ok;
+        Pid ->
+            io:format("Sending update to opponent PID: ~p~n", [Pid]),
+            fleetfra_chin_user_handler:send_message(Name, Response),
+            %OtherPid ! {game_update, Response},
+            %gen_server:cast(OtherPid, {game_update, Response}),
+            io:format("Message sent to opponent: ~p~n", [Response])
+    end.

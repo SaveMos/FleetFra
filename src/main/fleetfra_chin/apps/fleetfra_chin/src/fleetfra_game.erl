@@ -185,7 +185,7 @@ cell_to_json(#{<<"row">> := Row, <<"col">> := Col, <<"value">> := Value}) ->
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
-%% Change the current turn.
+%% Swap the current turn of the target game.
 %% @param GameID The unique identifier for the game.
 %% @end
 %%-------------------------------------------------------------------
@@ -233,6 +233,7 @@ make_move(GameID, {Player, {Row, Col}}) ->
                           {fin, winner, WaitingPlayerAtom};
                         _ ->
                           game_state_manager:delete_game_state(GameID),
+                          websocket_manager:remove_pid(GameID, Player),
                           {fin, loser}
                       end;
                     false ->
@@ -254,6 +255,7 @@ make_move(GameID, {Player, {Row, Col}}) ->
                                   {fin, winner, WaitingPlayerAtom};
                                 _ ->
                                   game_state_manager:delete_game_state(GameID),
+                                  websocket_manager:remove_pid(GameID, Player),
                                   {fin, loser}
                               end;
                             _ ->
@@ -410,6 +412,15 @@ update_game_state(GameState, Player, NewBattlefield, NewValue) ->
   %% Return the updated GameState
   GameState#game{battlefields = NewBattlefields, current_turn = NewTurn , waiting_player = OldTurn, game_over = GameOver, winner = Winner, created_at = erlang:system_time(second)}.
 
+
+%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc
+%% Change the current turn of the match.
+%% @param GameState The current game state.
+%% @return true if the game is over, false otherwise.
+%%-------------------------------------------------------------------
 
 update_game_state_turn(GameState) ->
   PlayerAtom = GameState#game.current_turn,

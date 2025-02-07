@@ -11,7 +11,7 @@
    ]},
   {env,[]},                             % Environmental variables (none in this case)
   {modules, []},                        % List of modules included in the application (none in this case)
-
+  {maintainers, []},
   {licenses, ["Apache-2.0"]},           % License for the application (Apache-2.0)
   {links, []}                           % Links to other resources (none in this case)
  ]}.

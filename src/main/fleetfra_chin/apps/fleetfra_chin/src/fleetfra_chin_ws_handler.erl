@@ -20,6 +20,8 @@
 %% @end
 %%==============================================================================%%
 
+-record(client, {pid}).
+
 %%------------------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
@@ -31,14 +33,26 @@
 %% @end
 %%------------------------------------------------------------------------------
 
+
 init(Req, State) ->
-  case extract_params(Req) of
-    {GameID, PlayerID} ->
-      websocket_manager:store_pid(GameID, PlayerID);
-    {error, _} ->
-      pass
+  %case extract_params(Req) of
+    %{GameID, PlayerID} -> pass;
+      %%fleetfra_chin_user_handler:start_link(GameID, PlayerID);
+      %register_websocket_process(GameID, PlayerID);
+    %{error, _} -> pass end,
+  {cowboy_websocket, Req, State,
+    #{idle_timeout => infinity}
+  }.
+
+register_websocket_process(GameID, PlayerID) ->
+  Name = utility:concat_game_player(GameID, PlayerID),
+  case erlang:whereis(Name) of
+    undefined ->
+      pass;
+    _ ->
+      erlang:unregister(Name)
   end,
-  {cowboy_websocket, Req, State}.
+  erlang:register(Name, erlang:self()).
 
 %%------------------------------------------------------------------------------
 %% @author SaveMos
@@ -56,27 +70,28 @@ websocket_init(State) ->
 %% @doc
 %% Helper function to extract parameters from WebSocket request
 %% Extracts the GameID and the PlayerID from the WebSocket request URI.
-%% @param State The state of the WebSocket connection.
+%% @param Req The request.
 %% @return A tuple indicating success and returning the state.
 %% @end
 %%------------------------------------------------------------------------------
 
 extract_params(Req) ->
-  % Estrai la query string
-  QueryString = cowboy_req:qs(Req),
-
-  % Converti la query string da binary a lista di caratteri (stringa)
+  QueryString = cowboy_req:qs(Req), % Get the query parameters.
   QueryStringStr = binary:bin_to_list(QueryString),
+  parse_query_string(QueryStringStr). % Extract the parameters.
 
-  % Estrai i parametri dalla query string e ritorna GameID e PlayerID
-  parse_query_string(QueryStringStr).
+%%------------------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc Function to parse the QueryString.
+%% @param QueryString The query string.
+%% @return The two parameters GameID and PlayerID.
+%% @end
+%%------------------------------------------------------------------------------
 
-% Funzione per fare il parsing della query string
 parse_query_string(QueryString) ->
-  % Split della query string in base al carattere '&'
-  Pairs = string:tokens(QueryString, "&"),
-
-  % Parsing delle coppie chiave-valore (game_id=...&player=...)
+  Pairs = string:tokens(QueryString, "&"), % Query split by '&'.
+  % Key-Value parsing (game_id=...&player=...)
   lists:foldl(fun(Pair, Acc) ->
     case string:split(Pair, "=") of
       [Key, Value] when Key == "game_id" -> {Value, element(2, Acc)};
@@ -94,7 +109,9 @@ parse_query_string(QueryString) ->
 %% @return A tuple containing the response message and updated state.
 %%------------------------------------------------------------------------------
 websocket_handle({text, Msg}, State) ->
+  %io:format("Received message: ~s~n", [Msg]),
   Response = fleetfra_chin_handler:process_request(Msg), %% Process the request using the game logic handler.
+
   {reply, {text, Response}, State};   %% Send the response back to the WebSocket client.
 
 %%------------------------------------------------------------------------------
@@ -119,18 +136,20 @@ websocket_handle(_Data, State) ->
 %%------------------------------------------------------------------------------
 websocket_info({game_update, Response}, Req, State) ->
   io:format("Player2 received game update: ~p~n", [Response]),
-  Message = jsx:encode(Response),
+  case jsx:is_jsonable(Response) of
+    true -> Message = jsx:encode(Response);
+    false -> Message = "{\"error\": \"invalid json\"}"
+  end,
   {reply, {text, Message}, Req, State};
 websocket_info(_Info, Req, State) ->
   {ok, Req, State}.
 
+websocket_info({debug_message, Msg}, State) ->
+  io:format("Received debug message: ~p~n", [Msg]),
+  {ok, State};
 websocket_info(_Info, State) ->
-  io:format("websocket_info received: ~p~n", [_Info]),
+  io:format("Info received ~p~n", [_Info]),
   {ok, State}.
-
-
-
-
 
 %%------------------------------------------------------------------------------
 %% @author SaveMos
@@ -142,4 +161,5 @@ websocket_info(_Info, State) ->
 %% @return `ok` to indicate successful cleanup.
 %%------------------------------------------------------------------------------
 terminate(_Reason, _Req, _State) ->
+  io:format("WebSocket terminating: ~p - PID: ~p ~n", [_Reason, self()]),
   ok.
