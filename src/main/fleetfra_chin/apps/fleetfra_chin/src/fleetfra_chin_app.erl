@@ -22,7 +22,8 @@
 %% @doc Starts the HTTP server.
 %% @param _StartType Ignored.
 %% @param _StartArgs Ignored.
-%% @return {ok, Pid} where Pid is the supervisor process ID.
+%% @returns {ok, Pid} where Pid is the supervisor process ID.
+%% @end
 %%%-------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
   Dispatch = cowboy_router:compile([
@@ -48,7 +49,8 @@ start(_StartType, _StartArgs) ->
 %% Stops the application.
 %% This function is required by the OTP application behavior.
 %% @param _State Ignored.
-%% @return ok.
+%% @returns ok.
+%% @end
 %%%-------------------------------------------------------------------
 stop(_State) ->
   ok.

@@ -25,14 +25,11 @@
 %%------------------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Called when the WebSocket connection is initialized.
-%% Stores the process PID.
+%% @doc Called when the WebSocket connection is initialized.
 %% @param State The state of the WebSocket connection.
-%% @return A tuple indicating success and returning the state.
+%% @returns A tuple indicating success and returning the state.
 %% @end
 %%------------------------------------------------------------------------------
-
 
 init(Req, State) ->
   %case extract_params(Req) of
@@ -40,9 +37,19 @@ init(Req, State) ->
       %%fleetfra_chin_user_handler:start_link(GameID, PlayerID);
       %register_websocket_process(GameID, PlayerID);
     %{error, _} -> pass end,
-  {cowboy_websocket, Req, State,
-    #{idle_timeout => infinity}
+  {cowboy_websocket, Req, State
+    %,#{idle_timeout => infinity}
   }.
+
+%%------------------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc Register the current process with the name "GameID_PlayerID".
+%% @param GameID The unique identifier for the game.
+%% @param Player The player who made the request.
+%% @returns Nothing.
+%% @end
+%%------------------------------------------------------------------------------
 
 register_websocket_process(GameID, PlayerID) ->
   Name = utility:concat_game_player(GameID, PlayerID),
@@ -59,7 +66,8 @@ register_websocket_process(GameID, PlayerID) ->
 %% @copyright (C) 2025, <FleetFra>
 %% @doc Called when the WebSocket connection is initialized.
 %% @param State The state of the WebSocket connection.
-%% @return A tuple indicating success and returning the state.
+%% @returns A tuple indicating success and returning the state.
+%% @end
 %%------------------------------------------------------------------------------
 websocket_init(State) ->
   {ok, State}.
@@ -71,7 +79,7 @@ websocket_init(State) ->
 %% Helper function to extract parameters from WebSocket request
 %% Extracts the GameID and the PlayerID from the WebSocket request URI.
 %% @param Req The request.
-%% @return A tuple indicating success and returning the state.
+%% @returns A tuple indicating success and returning the state.
 %% @end
 %%------------------------------------------------------------------------------
 
@@ -85,7 +93,7 @@ extract_params(Req) ->
 %% @copyright (C) 2025, <FleetFra>
 %% @doc Function to parse the QueryString.
 %% @param QueryString The query string.
-%% @return The two parameters GameID and PlayerID.
+%% @returns The two parameters GameID and PlayerID.
 %% @end
 %%------------------------------------------------------------------------------
 
@@ -106,7 +114,8 @@ parse_query_string(QueryString) ->
 %% @doc Handles incoming WebSocket messages.
 %% @param Msg The received WebSocket message (expected to be in JSON format).
 %% @param State The current state of the WebSocket connection.
-%% @return A tuple containing the response message and updated state.
+%% @returns A tuple containing the response message and updated state.
+%% @end
 %%------------------------------------------------------------------------------
 websocket_handle({text, Msg}, State) ->
   %io:format("Received message: ~s~n", [Msg]),
@@ -120,7 +129,8 @@ websocket_handle({text, Msg}, State) ->
 %% @doc Handles unexpected or unsupported WebSocket data.
 %% @param _Data The received data that is not handled explicitly.
 %% @param State The current state.
-%% @return A tuple indicating that the connection remains open.
+%% @returns A tuple indicating that the connection remains open.
+%% @end
 %%------------------------------------------------------------------------------
 websocket_handle(_Data, State) ->
   {ok, State}.
@@ -132,7 +142,8 @@ websocket_handle(_Data, State) ->
 %% This can be used to push messages from the server to the client.
 %% @param Info The message received from another process.
 %% @param State The current state.
-%% @return A tuple indicating that the connection remains open.
+%% @returns A tuple indicating that the connection remains open.
+%% @end
 %%------------------------------------------------------------------------------
 websocket_info({game_update, Response}, Req, State) ->
   io:format("Player2 received game update: ~p~n", [Response]),
@@ -158,7 +169,8 @@ websocket_info(_Info, State) ->
 %% @param Reason The reason for termination.
 %% @param _Req The WebSocket request.
 %% @param _State The final state before termination.
-%% @return `ok` to indicate successful cleanup.
+%% @returns `ok` to indicate successful cleanup.
+%% @end
 %%------------------------------------------------------------------------------
 terminate(_Reason, _Req, _State) ->
   io:format("WebSocket terminating: ~p - PID: ~p ~n", [_Reason, self()]),

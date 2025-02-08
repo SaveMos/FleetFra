@@ -107,8 +107,8 @@ start_game_client(GameID, {Player, Battlefield}) ->
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Initialize the ETS, use it before inserting game states.
+%% @doc Initialize the ETS, use it before inserting game states.
+%% @returns ok if the ets has been initialized.
 %% @end
 %%-------------------------------------------------------------------
 init_ets() ->
@@ -120,9 +120,10 @@ init_ets() ->
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Return a JSON with all the information about a certain game.
+%% @doc Return a JSON with all the information about a certain game.
 %% @param GameID The unique identifier for the game.
+%% @returns {ok, JsonResponse} The current json-encoded game state.
+%%          {error, game_not_found} if the game does not exists.
 %% @end
 %%-------------------------------------------------------------------
 
@@ -139,11 +140,25 @@ get_game_info(GameID) ->
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
 %% @doc
-%% Return a JSON with all the information about a certain game.
-%% @param GameState The game structure.
+%% Returns a JSON with all the information about a certain game.
+%%
+%% @param GameState The game structure, which contains various attributes like game ID, players,
+%%                  battlefields, current turn, etc.
+%%
+%% @returns
+%%   A JSON-encoded map with the game's information, including:
+%%   - game_id: The unique identifier of the game
+%%   - player1: The first player
+%%   - player2: The second player
+%%   - battlefields: The map of battlefields converted to JSON
+%%   - current_turn: The player whose turn it is
+%%   - waiting_player: The player who is waiting for their turn
+%%   - game_over: Boolean indicating whether the game is over
+%%   - winner: The winner of the game (if any)
+%%   - created_at: The timestamp when the game was created
+%%   - init_complete: Boolean indicating if the game setup is complete
 %% @end
 %%-------------------------------------------------------------------
-
 game_state_to_json(#game{
   game_id = GameID,
   player1 = Player1,
@@ -168,16 +183,42 @@ game_state_to_json(#game{
     <<"created_at">> => CreatedAt,
     <<"init_complete">> => InitComplete
   },
-  jsx:encode(JsonMap).
+  jsx:encode(JsonMap).  % Encodes the map as a JSON string
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Converts a map of battlefields into a JSON representation.
+%% @param Battlefields A map of battlefields (each battlefield associated with a player).
+%% @returns
+%%   A map where each battlefield is converted into its JSON form.
+%% @end
+%%-------------------------------------------------------------------
 battlefields_to_json(Battlefields) ->
   maps:map(fun(_, BF) -> battlefield_to_json(BF) end, Battlefields).
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Converts a single battlefield into a JSON representation.
+%% @param Battlefield The battlefield structure, which can be either a map or a list.
+%% @returns
+%%   If the battlefield is a map, it returns the map's values.
+%%   If the battlefield is a list, it returns a list of JSON-encoded cells.
+%% @end
+%%-------------------------------------------------------------------
 battlefield_to_json(Battlefield) when is_map(Battlefield) ->
-  maps:values(Battlefield);
-battlefield_to_json(Battlefield) when is_list(Battlefield) ->
-  [cell_to_json(Cell) || Cell <- Battlefield].
+  maps:values(Battlefield);  % Returns the values of the map (battlefield elements)
 
+battlefield_to_json(Battlefield) when is_list(Battlefield) ->
+  [cell_to_json(Cell) || Cell <- Battlefield].  % Converts each cell in the list to JSON
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Converts a single cell of the battlefield into a JSON representation.
+%% @param Cell A map containing row, column, and value of the battlefield cell.
+%% @returns
+%%   A map with keys: row, col, value, representing the cell in JSON format.
+%% @end
+%%-------------------------------------------------------------------
 cell_to_json(#{<<"row">> := Row, <<"col">> := Col, <<"value">> := Value}) ->
   #{<<"row">> => Row, <<"col">> => Col, <<"value">> => Value}.
 
@@ -187,6 +228,8 @@ cell_to_json(#{<<"row">> := Row, <<"col">> := Col, <<"value">> := Value}) ->
 %% @doc
 %% Swap the current turn of the target game.
 %% @param GameID The unique identifier for the game.
+%% @returns {ok, proceed} if the turn has been changed.
+%%          {error, game_not_found} if the game does not exists.
 %% @end
 %%-------------------------------------------------------------------
 
@@ -207,9 +250,20 @@ change_turn(GameID) ->
 %% @doc
 %% Makes a move in the game by updating the corresponding battlefield.
 %% It checks if the move is valid and updates the game state accordingly.
+%%
 %% @param GameID The unique identifier for the game.
 %% @param {Player, {Row, Col}} A tuple containing the player's name and the coordinates of the move.
-%% @return {ok, NewGameState} if the move is valid and accepted, or an error tuple if invalid.
+%%
+%% @returns
+%%   {ok, NewValue, WaitingPlayerAtom} if the move is valid and the game continues,
+%%   {fin, winner, WaitingPlayerAtom} if the player wins the game,
+%%   {fin, loser} if the game is over and the player loses,
+%%   {error, out_of_bound_coordinates} if the move is outside the bounds of the game board,
+%%   {error, not_integer} if the coordinates are not valid integers,
+%%   {error, game_not_initiated} if the game has not been initiated yet,
+%%   {error, not_your_turn} if it is not the player's turn to move,
+%%   {error, player_not_found} if the player is not found in the game state,
+%%   {error, game_not_found} if the game does not exist.
 %% @end
 %%-------------------------------------------------------------------
 make_move(GameID, {Player, {Row, Col}}) ->
@@ -230,16 +284,15 @@ make_move(GameID, {Player, {Row, Col}}) ->
                       % The game is already ended, so the other player won.
                       case GameState#game.winner of
                         PlayerAtom ->
-                          {fin, winner, WaitingPlayerAtom};
+                          {fin, winner, WaitingPlayerAtom}; % Player wins
                         _ ->
                           game_state_manager:delete_game_state(GameID),
-                          websocket_manager:remove_pid(GameID, Player),
-                          {fin, loser}
+                          %websocket_manager:remove_pid(GameID, Player),
+                          {fin, loser} % Player loses
                       end;
                     false ->
                       % The game is not over yet.
                       case check_move_coordinates(Row, Col) of
-                        % Input check.
                         {ok , _} ->
                           %% Update the battlefield with the move
                           {UpdatedBattlefield, NewValue} = update_battlefield(PlayerBattlefield, Row, Col),
@@ -248,42 +301,42 @@ make_move(GameID, {Player, {Row, Col}}) ->
                           %% Save the new game state
                           game_state_manager:put_game_state(GameID, NewGameState),
                           case NewGameState#game.game_over of
-                            % The game is ended.
                             true ->
                               case NewGameState#game.winner of
                                 PlayerAtom ->
-                                  {fin, winner, WaitingPlayerAtom};
+                                  {fin, winner, WaitingPlayerAtom}; % Player wins
                                 _ ->
                                   game_state_manager:delete_game_state(GameID),
-                                  websocket_manager:remove_pid(GameID, Player),
-                                  {fin, loser}
+                                  %websocket_manager:remove_pid(GameID, Player),
+                                  {fin, loser} % Player loses
                               end;
                             _ ->
-                              {ok, NewValue, WaitingPlayerAtom}
+                              {ok, NewValue, WaitingPlayerAtom} % Game continues
                           end;
                         {error , out_of_bounds} ->
-                          {error, out_of_bound_coordinates};
+                          {error, out_of_bound_coordinates}; % Move out of bounds
                         {error, not_integer} ->
-                          {error, not_integer}
+                          {error, not_integer} % Invalid coordinate type
                       end
                   end;
                 false ->
-                  {error , game_not_initiated}
+                  {error , game_not_initiated} % Game has not been initiated
               end;
-              error ->
-                {error, player_not_found}
+            error ->
+              {error, player_not_found} % Player not found in the battlefield
           end;
-       _ ->
+        _ ->
           case GameState#game.waiting_player of
             PlayerAtom ->
               {error, not_your_turn}; %% It's not their turn.
             _ ->
-              {error, player_not_found} % The player does not exists.
+              {error, player_not_found} % The player does not exist in the game state
           end
       end;
     {error, not_found} ->
-      {error, game_not_found}
+      {error, game_not_found} % Game not found
   end.
+
 
 %%%-------------------------------------------------------------------
 %%% @doc
@@ -291,10 +344,10 @@ make_move(GameID, {Player, {Row, Col}}) ->
 %%% Additionally, it checks that Row and Col are integers.
 %%% The battlefield dimension is retrieved dynamically using `get_battlefield_dimension/0`.
 %%%
-%%% @param Row The row index of the move (integer).
-%%% @param Col The column index of the move (integer).
-%%%
-%%% @returns {ok, proceed} if the move is valid.
+%% @param Row The row index of the move (integer).
+%% @param Col The column index of the move (integer).
+%%
+%% @returns {ok, proceed} if the move is valid.
 %%%          {error, invalid_input} if Row or Col is not an integer.
 %%%          {error, out_of_bounds} if the move is outside the allowed range.
 %%% @end
@@ -328,7 +381,8 @@ check_move_coordinates(Row, Col) ->
 %% @param Row The row index of the cell to update.
 %% @param Col The column index of the cell to update.
 %% @param NewValue The new value to set at the specified cell.
-%% @return The updated battlefield and the new value of the hit cell..
+%% @returns The updated battlefield and the new value of the hit cell.
+%% @end
 %%-------------------------------------------------------------------
 
 update_battlefield(Battlefield, Row, Col) ->
@@ -369,12 +423,12 @@ update_battlefield(Battlefield, Row, Col) ->
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Updates the game state after a move by updating the battlefield, the current turn, and checking if the game is over.
+%% @doc Updates the game state after a move. Also check if the game is over.
 %% @param GameState The current game state.
 %% @param Player The player who made the move.
 %% @param NewBattlefield The updated battlefield of the player.
-%% @return The updated game state.
+%% @returns The updated game state.
+%% @end
 %%-------------------------------------------------------------------
 update_game_state(GameState, Player, NewBattlefield, NewValue) ->
   %% Convert Player to an atom if it's a binary
@@ -396,16 +450,20 @@ update_game_state(GameState, Player, NewBattlefield, NewValue) ->
            end,
 
   case {NewValue,GameOver} of
-    {2 , false } ->
+    {2 , false} ->
+      % Ship hit, the turn does not change.
       NewTurn = GameState#game.current_turn,
       OldTurn = GameState#game.waiting_player;
     {3 , false} ->
+      % Water hit, the turn does change.
       NewTurn = GameState#game.waiting_player,
       OldTurn = GameState#game.current_turn;
     {_ , true} ->
+      % The player who just made the move have won.
       NewTurn = GameState#game.waiting_player,
       OldTurn = GameState#game.current_turn;
     _ ->
+      % Default, the turn change.
       NewTurn = GameState#game.waiting_player,
       OldTurn = GameState#game.current_turn
   end,
@@ -416,10 +474,10 @@ update_game_state(GameState, Player, NewBattlefield, NewValue) ->
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Change the current turn of the match.
+%% @doc Change the current turn of the match.
 %% @param GameState The current game state.
-%% @return true if the game is over, false otherwise.
+%% @returns The updated game state.
+%% @end
 %%-------------------------------------------------------------------
 
 update_game_state_turn(GameState) ->
@@ -432,17 +490,17 @@ update_game_state_turn(GameState) ->
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Checks if the game is over, meaning all the ships of one player have been hit.
+%% @doc Checks if the game is over, meaning all the ships of one player have been hit.
 %% @param GameState The current game state.
-%% @return true if the game is over, false otherwise.
+%% @returns An atom, true if the game is over, false otherwise.
+%% @end
 %%-------------------------------------------------------------------
 
 check_game_over(Battlefield) ->
   case lists:member(true, [case Cell of
-                             #{<<"value">> := 1} -> true;  %% If the cell is an unhit ship
-                             _ -> false
+                             #{<<"value">> := 1} -> true;  %% If the cell is an un-hit ship.
+                             _ -> false %% If the cell is an hit ship or water.
                            end || Cell <- Battlefield]) of
-    true -> false;  %% If there's at least one unhit ship, the game is not over
-    false -> true   %% If all ships are hit, the game is over
+    true -> false;  %% If there's at least one un-hit ship, the game is not over.
+    false -> true   %% If all ships are hit, the game is over.
   end.

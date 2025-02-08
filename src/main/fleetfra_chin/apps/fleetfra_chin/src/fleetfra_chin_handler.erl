@@ -15,10 +15,10 @@
 %% Handles incoming HTTP requests for starting a game or making a move.
 %% Parses the request body, extracts the game information, and calls the appropriate game logic functions.
 %% Created : 01. feb 2025 09:53
-%% @end
 %% @param Req The HTTP request object.
 %% @param State The state of the Cowboy handler.
-%% @return {ok, Req2, State} The updated request and state.
+%% @returns {ok, Req2, State} The updated request and state.
+%% @end
 %%==============================================================================%%
 init(Req, State) ->
     {ok, Body, Req1} = cowboy_req:read_body(Req),
@@ -29,11 +29,10 @@ init(Req, State) ->
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Processes the request, which is a JSON object representing a game action.
-%% @end
+%% @doc Processes the request, which is a JSON object representing a game action.
 %% @param ParsedJson The parsed JSON request.
-%% @return A JSON-encoded response.
+%% @returns A JSON-encoded response.
+%% @end
 %%-------------------------------------------------------------------
 process_request(Body) ->
     ParsedJson = parse_json(Body),
@@ -89,11 +88,10 @@ process_request(Body) ->
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Parses the incoming JSON (using JSX) request body and returns a map.
-%% @end
+%% @doc Parses the incoming JSON (using JSX) request body and returns a map.
 %% @param Body The JSON body of the request.
-%% @return A map representing the parsed JSON.
+%% @returns A map representing the parsed JSON.
+%% @end
 %%-------------------------------------------------------------------
 parse_json(Body) ->
     jsx:decode(Body, [{return_maps, true}]);
@@ -105,7 +103,7 @@ parse_json({jsx , Body}) ->
 %% @copyright (C) 2025, <FleetFra>
 %% @doc Builds a JSON response string to send back to the client.
 %% @param Message The message to include in the response.
-%% @return The JSON-encoded response.
+%% @returns The JSON-encoded response.
 %% @end
 %%-------------------------------------------------------------------
 
@@ -119,7 +117,7 @@ build_response(Message) ->
 %% @param Message The message to include in the response.
 %% @param GameID The unique gam identifier.
 %% @param CurrentPlayer The current playing player.
-%% @return The JSON-encoded response.
+%% @returns The JSON-encoded response.
 %% @end
 %%-------------------------------------------------------------------
 
