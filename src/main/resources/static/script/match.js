@@ -7,6 +7,7 @@ let intervalId = null; // Variabile per memorizzare l'ID del timer
 let row, col;
 let last_update = null;
 let turn;
+let user1, user2, game_winner;
 
 // Funzione per inizializzare il WebSocket
 function initializeWebSocket(current_match, current_battlefield) {
@@ -25,7 +26,7 @@ function initializeWebSocket(current_match, current_battlefield) {
 
     // Server sent a message
     socket.addEventListener("message", (event) => {
-        console.log("Message received from server:", event.data);
+        //console.log("Message received from server:", event.data);
         handleServerMessage(event.data);
 
     });
@@ -51,7 +52,7 @@ function sendStartMessage() {
             socket.send(message);
         }, 1000);
 
-        console.log("Message sent:", message);
+        console.log("Start message sent:", message);
     } else {
         console.error("WebSocket is not open.");
     }
@@ -69,7 +70,7 @@ function sendMoveMessage(current_row, current_col) {
             socket.send(message);
         }, 1000);
 
-        console.log("Message sent:", message);
+        console.log("Move message sent:", message);
     } else {
         console.error("WebSocket is not open.");
     }
@@ -90,7 +91,7 @@ function sendGetGameMessage(){
             socket.send(message);
         }, 1000);
 
-        console.log("Message sent:", message);
+        console.log("Get game info message sent:", message);
     } else {
         console.error("WebSocket is not open.");
     }
@@ -111,7 +112,7 @@ function sendChangeTurnMessage(){
             socket.send(message);
         }, 1000);
 
-        console.log("Message sent:", message);
+        console.log("Change turn message sent:", message);
     } else {
         console.error("WebSocket is not open.");
     }
@@ -119,7 +120,7 @@ function sendChangeTurnMessage(){
 
 // Funzione per gestire i messaggi ricevuti dal server
 function handleServerMessage(serverMessage) {
-    console.log("Handling message:", serverMessage);
+    //console.log("Handling message:", serverMessage);
     try {
         const message = JSON.parse(serverMessage);
         //Handling the updated information
@@ -133,17 +134,27 @@ function handleServerMessage(serverMessage) {
             }
             // game finished
             if(extractedData.winner !== "none"){
-                if(extractedData.winner === player_username){
-                    alert("YOU WIN!");
-                }else{
-                    alert("YOU LOST!");
-                }
-                // insert match in the database
-                reloadPage();
-                return;
-            }
 
-            if(player_username === extractedData.current_turn){
+                if(extractedData.winner === player_username){
+                    insertMatch();
+
+                    setTimeout(function() {
+                        hideWaitingScreen();
+                        reloadPage();
+                    }, 2000);
+
+
+                }else{
+                    showWaitingScreen();
+                    document.getElementById("matchMaking").innerText = "YOU LOST!";
+                    document.getElementById("matchMaking").style.color = "#E70448E7";
+                    // Dopo 2 secondi, nascondiamo la finestra di attesa
+                    setTimeout(function() {
+                        hideWaitingScreen();
+                        reloadPage();
+                    }, 2000);
+                }
+            } else if(player_username === extractedData.current_turn){
                 turn = true;
                 // stop the periodic request if the player has the turn
                 stopPeriodicExecution();
@@ -155,20 +166,23 @@ function handleServerMessage(serverMessage) {
                 resetTimer();
                 startTimer();
 
-
-                }else if(player_username === extractedData.waiting_player){
+            }else if(player_username === extractedData.waiting_player){
                 turn = false;
                 // deactivate opponent grid
                 changeOpponentGrid(false);
                 // periodic requests to the server
                 startPeriodicExecution();
+                console.log("last update = "+last_update);
+                console.log("last update read = "+ extractedData.created_at);
+
                 if(last_update !== extractedData.created_at){
+                    console.log("last update is different");
                     // update grid of the player
                     updatePlayerGrid(extractedData.battlefieldMatrix);
                     // reset and start the timer
                     resetTimer();
                     startTimer();
-                    last_update = extractedData.waiting_player;
+                    last_update = extractedData.created_at;
                 }
             }
             // set the field of the player turn
@@ -179,10 +193,15 @@ function handleServerMessage(serverMessage) {
             const responseMessage = message.message;
             // case-insensitive check
             if (/error/i.test(responseMessage) || /invalid/i.test(responseMessage)) {
-                console.log("Error: ", responseMessage);
-                //MOSTRARE ERRORE E REFRESH PAGINA
-                reloadPage();
-                return;
+                showWaitingScreen();
+                document.getElementById("matchMaking").innerText = "Error: " + responseMessage;
+                document.getElementById("matchMaking").style.color = "#E70448E7";
+                // Dopo 2 secondi, nascondiamo la finestra di attesa
+                setTimeout(function() {
+                    hideWaitingScreen();
+                    reloadPage();
+                }, 2000);
+
             }
 
             switch (responseMessage) {
@@ -194,12 +213,14 @@ function handleServerMessage(serverMessage) {
                     console.log("Move accepted - ship");
                     //Aggiorna solo griglia avversario e chiede info per vedere se ha vinto
                     updateOpponentCell(true);
+                    changeOpponentGrid(false);
                     sendGetGameMessage();
                     break;
                 case "OK: Move accepted [3]":
                     console.log("Move accepted - water");
                     //Aggiorna solo griglia avversario e richiede aggiornamento per sospendersi
                     updateOpponentCell(false);
+                    changeOpponentGrid(false);
                     sendGetGameMessage();
                     break;
                 case "OK: Turn changed":
@@ -208,6 +229,12 @@ function handleServerMessage(serverMessage) {
                     break;
                 case "VICTORY":
                     console.log("Congratulations! You won!");
+                    showWaitingScreen();
+                    document.getElementById("matchMaking").innerText = "YOU WIN!";
+                    document.getElementById("matchMaking").style.color = "#07C043FF";
+                    sendGetGameMessage(); //necessary otherwise the field winner is none
+
+
                     break;
                 case "DEFEAT":
                     console.log("Game over. You lost.");
@@ -221,9 +248,51 @@ function handleServerMessage(serverMessage) {
     }
 
 }
+function insertMatch(){
+    let timestamp =  new Date();
+    let formattedDate = timestamp.toISOString().replace('T', ' ').substring(0, 19);
+
+
+    let win;
+
+    if (user1 === game_winner){
+        win = "1";
+    }else{
+        win = "0";
+    }
+
+    let match = {
+        user1: user1,
+        user2: user2,
+        id: 1,
+        winner: win,
+        timestamp: formattedDate
+    };
+
+    $.ajax({
+        url : "http://10.2.1.26:5050/insertMatch",
+        data : JSON.stringify(match),
+        type : "POST",
+        dataType: "text",
+        contentType: 'application/json',
+        success: function (data) {
+            console.log(data);
+        },
+        error: function(xhr) {
+            console.log(xhr);
+        }
+    })
+}
 function updateOpponentCell(sink){
     let boardName = "opponent";
 
+    let cell = document.getElementById(`${boardName},${row},${col}`);
+    if(sink){
+        cell.classList.add("sink");
+    }else{
+        cell.classList.add("unavailable");
+    }
+    /*
     document.querySelectorAll(".cell").forEach((cell) => {
 
         // For the cells in the grid1
@@ -241,6 +310,8 @@ function updateOpponentCell(sink){
 
         }
     });
+    */
+
 }
 function updatePlayerGrid(grid){
     let boardName = "user";
@@ -263,13 +334,39 @@ function updatePlayerGrid(grid){
 }
 function extractGameData(gameData) {
 
-
-    const { created_at, current_turn, waiting_player, winner, battlefields } = gameData;
-
+    const { created_at, current_turn, player1, player2, waiting_player, winner, battlefields } = gameData;
+    user1 = player1;
+    user2 = player2;
+    game_winner = winner;
     // Estrarre la matrice del giocatore
+    /*
     let battlefieldMatrix = Array.from({ length: 10 }, () => Array(10).fill(0));
+
     battlefields[player_username].forEach(({ col, row, value }) => {
         battlefieldMatrix[row][col] = value;
+    });
+     */
+
+    const battlefield = battlefields[player_username];
+    if (!battlefield) {
+        console.error("No data found for the player");
+        return [];
+    }
+
+    let maxRow = 0;
+    let maxCol = 0;
+
+    battlefield.forEach(cell => {
+        if (cell.row > maxRow) maxRow = cell.row;
+        if (cell.col > maxCol) maxCol = cell.col;
+    });
+
+    const battlefieldMatrix = Array.from({ length: maxRow + 1 }, () =>
+        Array(maxCol + 1).fill(0)
+    );
+
+    battlefield.forEach(cell => {
+        battlefieldMatrix[cell.row][cell.col] = cell.value;
     });
 
     return {
