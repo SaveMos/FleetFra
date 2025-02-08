@@ -171,11 +171,20 @@ game_state_to_json(#game{
   created_at = CreatedAt,
   init_complete = InitComplete
 }) ->
+
+  Battlefield1 = maps:get(Player1, Battlefields),
+  Battlefield2 = maps:get(Player2, Battlefields),
+
+  SwappedBattlefields = Battlefields#{
+    Player1 => Battlefield2,
+    Player2 => Battlefield1
+  },
+
   JsonMap = #{
     <<"game_id">> => GameID,
     <<"player1">> => Player1,
     <<"player2">> => Player2,
-    <<"battlefields">> => battlefields_to_json(Battlefields),
+    <<"battlefields">> => battlefields_to_json(SwappedBattlefields),
     <<"current_turn">> => CurrentTurn,
     <<"waiting_player">> => WaitingPlayer,
     <<"game_over">> => GameOver,
