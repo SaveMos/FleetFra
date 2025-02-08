@@ -132,7 +132,7 @@ handle_call({get_opponent_pid, GameID, PlayerID , OpponentID}, _From, State) ->
 %%-------------------------------------------------------------------
 handle_cast({store_pid, GameID, PlayerID, PID}, State) ->
   ets:insert(?ETS_TABLE, {{GameID, PlayerID}, PID}),
-  {noreply, State}.
+  {noreply, State};
 
 %%-------------------------------------------------------------------
 %% @author Saverio
