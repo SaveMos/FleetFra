@@ -370,7 +370,7 @@ check_move_coordinates(Row, Col) ->
     {_, false} -> {error, not_integer};  %% Col is not an integer.
     {true, true} ->
       if
-        Row < 0 orelse Row >= Dim orelse Col < 0 orelse Col >= Dim ->
+        Row < 1 orelse Row >= Dim orelse Col < 1 orelse Col >= Dim ->
           %% If the row or column is outside the battlefield range, return an error.
           {error, out_of_bounds};
         true ->

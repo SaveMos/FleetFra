@@ -16,7 +16,7 @@
 %% API
 -export([start/2, stop/1]).
 
-%%%-------------------------------------------------------------------
+%%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
 %% @doc Starts the HTTP server.
@@ -24,7 +24,7 @@
 %% @param _StartArgs Ignored.
 %% @returns {ok, Pid} where Pid is the supervisor process ID.
 %% @end
-%%%-------------------------------------------------------------------
+%%-------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
   Dispatch = cowboy_router:compile([
     { '_', [{"/ws", fleetfra_chin_ws_handler, []}]} % Defining the handler that will take care of the requests to /ws.
