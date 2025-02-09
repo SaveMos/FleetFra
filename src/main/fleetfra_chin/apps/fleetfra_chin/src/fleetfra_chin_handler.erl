@@ -30,14 +30,23 @@ init(Req, State) ->
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
 %% @doc Processes the request, which is a JSON object representing a game action.
-%% @param ParsedJson The parsed JSON request.
-%% @returns A JSON-encoded response.
+%%
+%% @param Body The raw JSON body received from a client request.
+%%
+%% @returns A JSON-encoded response with appropriate status messages, including:
+%%   - "OK: Game started" if a new game is successfully initialized.
+%%   - "OK: Turn changed" if the turn is successfully switched.
+%%   - "ERROR: Game not found" if the game ID does not exist.
+%%   - "Invalid move" or other move-related errors based on the game logic.
+%%   - "VICTORY" or "DEFEAT" if the game ends.
+%%   - "Unknown request type" if the request type is invalid.
 %% @end
 %%-------------------------------------------------------------------
 process_request(Body) ->
     ParsedJson = parse_json(Body),
     GameID = maps:get(<<"game_id">>, ParsedJson),
     TypeRequest = maps:get(<<"type_request">>, ParsedJson),
+
     case TypeRequest of
         <<"start_game">> ->
             Player1 = maps:get(<<"player1">>, ParsedJson),
@@ -70,18 +79,39 @@ process_request(Body) ->
             Move = maps:get(<<"move">>, ParsedJson),
             Row = maps:get(<<"row">>, Move),
             Col = maps:get(<<"col">>, Move),
+
             case fleetfra_game:make_move(GameID, {Player, {Row, Col}}) of
-                {ok, NewValue, WaitingPlayerAtom} -> build_response(<<"OK: Move accepted [", (integer_to_binary(NewValue))/binary, "]">> , GameID , Player, WaitingPlayerAtom);
-                {error, invalid_move} -> build_response(<<"Invalid move">>);
-                {error, out_of_bound_coordinates} -> build_response(<<"INVALID MOVE: Out of bound coordinates">>);
-                {error, not_integer} -> build_response(<<"INVALID MOVE: Coordinates must be integers">>);
-                {error, not_your_turn} -> build_response(<<"TURN ERROR: Not your turn">>);
-                {error, player_not_found} -> build_response(<<"ERROR: Player not found">>);
-                {error, game_not_found} -> build_response(<<"ERROR: Game not found">>);
-                {error , game_not_initiated} -> build_response(<<"ERROR: Game found but not initiated">>);
-                {fin, winner, WaitingPlayerAtom} -> build_response(<<"VICTORY">> , GameID , Player,WaitingPlayerAtom);
-                {fin, loser} -> build_response(<<"DEFEAT">>)
+                {ok, NewValue, WaitingPlayerAtom} ->
+                    build_response(<<"OK: Move accepted [", (erlang:integer_to_binary(NewValue))/binary, "]">>, GameID, Player, WaitingPlayerAtom);
+
+                {error, invalid_move} ->
+                    build_response(<<"Invalid move">>);
+
+                {error, out_of_bound_coordinates} ->
+                    build_response(<<"INVALID MOVE: Out of bound coordinates">>);
+
+                {error, not_integer} ->
+                    build_response(<<"INVALID MOVE: Coordinates must be integers">>);
+
+                {error, not_your_turn} ->
+                    build_response(<<"TURN ERROR: Not your turn">>);
+
+                {error, player_not_found} ->
+                    build_response(<<"ERROR: Player not found">>);
+
+                {error, game_not_found} ->
+                    build_response(<<"ERROR: Game not found">>);
+
+                {error, game_not_initiated} ->
+                    build_response(<<"ERROR: Game found but not initiated">>);
+
+                {fin, winner, WaitingPlayerAtom} ->
+                    build_response(<<"VICTORY">>, GameID, Player, WaitingPlayerAtom);
+
+                {fin, loser} ->
+                    build_response(<<"DEFEAT">>)
             end;
+
         _ -> build_response(<<"Unknown request type">>)
     end.
 
