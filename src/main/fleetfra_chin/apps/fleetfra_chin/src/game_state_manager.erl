@@ -97,21 +97,19 @@ init([]) ->
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Handles the insertion of a new game state into ETS.
+%% @doc Handles the insertion of a new game state into ETS.
 %% @param {put, GameID, GameState} A tuple with the GameID and the corresponding GameState.
 %% @returns {ok} if the game state was successfully inserted.
 %% @end
 %%-------------------------------------------------------------------
 handle_call({put, GameID, GameState}, _From, State) ->
   ets:insert(?ETS_TABLE, {GameID, GameState}),
-  {reply, ok, State}.
+  {reply, ok, State};
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Retrieves a game state from ETS based on the GameID.
+%% @doc Retrieves a game state from ETS based on the GameID.
 %% @param {get, GameID} The GameID for which the game state is requested.
 %% @returns {ok, GameState} if the game state is found, or {error, not_found} if not.
 %% @end
@@ -120,26 +118,24 @@ handle_call({get, GameID}, _From, State) ->
   case ets:lookup(?ETS_TABLE, GameID) of
     [{GameID, GameState}] -> {reply, {ok, GameState}, State};
     [] -> {reply, {error, not_found}, State}
-  end.
+  end;
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Deletes a game state from ETS based on the GameID.
+%% @doc Deletes a game state from ETS based on the GameID.
 %% @param {delete, GameID} The GameID of the game state to be deleted.
 %% @returns {ok} if the game state was successfully deleted.
 %% @end
 %%-------------------------------------------------------------------
 handle_call({delete, GameID}, _From, State) ->
   ets:delete(?ETS_TABLE, GameID),
-  {reply, ok, State}.
+  {reply, ok, State};
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Handles updating a game state in ETS. If the game state exists, it is overwritten.
+%% @doc Handles updating a game state in ETS. If the game state exists, it is overwritten.
 %% @param {update, GameID, NewGameState} A tuple with the GameID and the updated GameState.
 %% @returns {ok} if the game state is successfully updated, or {error, not_found} if the GameID doesn't exist.
 %% @end
@@ -156,20 +152,18 @@ handle_call({update, GameID, NewGameState}, _From, State) ->
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Handles pushing an item to a queue stored in the state and returns the updated state.
+%% @doc Handles pushing an item to a queue stored in the state and returns the updated state.
 %% @param {push, Item} The item to be added to the queue.
 %% @returns The new state with the added item in the queue.
 %% @end
 %%-------------------------------------------------------------------
 handle_cast({push, Item}, State) ->
-  {noreply, [Item | State]}.
+  {noreply, [Item | State]};
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Removes the top item from the queue stored in the state.
+%% @doc Removes the top item from the queue stored in the state.
 %% @param {pop} The request to remove the top item from the queue.
 %% @returns The updated state with the top item removed.
 %% @end
@@ -203,13 +197,12 @@ handle_info(clean_old_games, State) ->
                 end, Games),
   % Schedule the next cleanup execution after 1 second
   erlang:send_after(fleetfra_chin_configuration:get_auto_clean_period(), erlang:self(), clean_old_games),
-  {noreply, State}.
+  {noreply, State};
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
-%% @doc
-%% Handles any other messages not matching specific patterns.
+%% @doc Handles any other messages not matching specific patterns.
 %% @param _Msg The message received.
 %% @returns {noreply, State} with the state unchanged.
 %% @end
