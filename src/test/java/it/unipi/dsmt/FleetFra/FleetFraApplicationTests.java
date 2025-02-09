@@ -1,6 +1,5 @@
 package it.unipi.dsmt.FleetFra;
 
-import it.unipi.dsmt.CaveDowny.FleetFraApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
