@@ -35,6 +35,7 @@ $(document).ready(function () {
 $(document).ready(function () {
     startGameButton.onclick = function () {
         showWaitingScreen();
+        document.getElementById("matchMaking").innerText = "Waiting for the opponent...";
         sendStart().catch(error => {
             console.error("Error in sendStart:", error);
         });
@@ -109,7 +110,7 @@ function showWaitingScreen() {
     message.style.borderRadius = "10px";
     message.style.textAlign = "center";
     message.style.fontSize = "20px";
-    message.innerHTML = "Waiting for the opponent...";
+    //message.innerHTML = "Waiting for the opponent...";
 
     // Aggiungiamo il messaggio all'overlay
     overlay.appendChild(message);
@@ -176,6 +177,9 @@ function changeOpponentGrid(activate){
                         currentCell.addEventListener("click", shoot);
                     }
                 }else{
+                    if (currentCell.classList.contains("eligible")){
+                        currentCell.classList.remove("eligible");
+                    }
                     currentCell.removeEventListener("mouseover", changeCell);
                     currentCell.removeEventListener("mouseout", restoreCell);
                     currentCell.removeEventListener("click", shoot);
