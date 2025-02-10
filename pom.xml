@@ -36,7 +36,7 @@
 	<description>Project for FleetFra</description>
 
 	<!-- URL for the project repository, can be left empty for now -->
-	<url/>
+	<url>https://github.com/SaveMos/FleetFra</url>
 
 	<!-- Licenses for the project, can be left empty for now -->
 	<licenses>
@@ -85,10 +85,10 @@
 
 	<!-- SCM (Source Control Management) details, can be left empty for now -->
 	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
+		<connection>scm:git:https://github.com/SaveMos/FleetFra.git</connection>
+		<developerConnection>scm:git:https://github.com/SaveMos/FleetFra.git</developerConnection>
+		<url>https://github.com/SaveMos/FleetFra</url>
+		<tag>HEAD</tag>
 	</scm>
 
 	<!-- Properties section for setting configuration options -->
