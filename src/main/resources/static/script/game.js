@@ -1,17 +1,10 @@
-let user_logged = sessionStorage.getItem("userLog");
-const serverIp = "10.2.1.30";
-const serverPort = 8080;
-const endpoint = "/game";
-
-const payload = {
-    game: "start"
-};
-
-let playerGrid
+let user_logged = sessionStorage.getItem("userLog"); // Get the logged-in player's username
+let playerGrid // Matrix of the user grid
+// Button to start the game and to logout
 const startGameButton = document.querySelector("#startButton");
 const logoutGameButton = document.querySelector("#homeButton");
 
-// manages the logout of the user
+// Function that manages the logout of the user, send the username to the Java server
 $(document).ready(function () {
     logoutGameButton.onclick = function () {
         $.ajax({
@@ -30,22 +23,22 @@ $(document).ready(function () {
         });
     };
 });
-
-//startGameButton.onclick = function() {sendStart()}
+// Function that shows the waiting for the opponent window
 $(document).ready(function () {
     startGameButton.onclick = function () {
         showWaitingScreen();
         document.getElementById("matchMaking").innerText = "Waiting for the opponent...";
+        // Send request to find the opponent to the Java server
         sendStart().catch(error => {
             console.error("Error in sendStart:", error);
         });
     };
 });
-
+// Set the values for the user matrix
 function setUserGrid(grid){
     playerGrid = grid;
 }
-
+// Function to send request to find the opponent to the Java server
 async function sendStart(){
 
     $.ajax({
@@ -61,34 +54,38 @@ async function sendStart(){
             console.log("Player 2:", jsonResponse.player2);
 
             sessionStorage.setItem("gameId", jsonResponse.matchId);
-            //document.getElementById("playerHeader").innerText = jsonResponse.player1;
+            // Show the opponent username over the opponent grid
             document.getElementById("opponentHeader").innerText = jsonResponse.player2;
+            // Show the opponent found message in the window
             document.getElementById("matchMaking").innerText = "Opponent found!";
             document.getElementById("matchMaking").style.color = "#07C043FF";
 
-            // Dopo 2 secondi, nascondiamo la finestra di attesa
+            // After 2 seconds, hide the waiting window
             setTimeout(function() {
                 hideWaitingScreen();
             }, 2000);
-
+            // Remove the style of the cells of the grid that are neighbour of the ships
             changeUserGrid();
-            //changeOpponentGrid(true);
+            // Disable the start game button
             startGameButton.disabled = true;
+            // Initialize the web socket for the game logic communication
             initializeWebSocket(jsonResponse.matchId, playerGrid);
 
         },
         error: function (xhr) {
+            // Show an error message in the window
             document.getElementById("matchMaking").innerText = "Opponent not found!";
             document.getElementById("matchMaking").style.color = "#E70448E7";
-            // Dopo 2 secondi, nascondiamo la finestra di attesa
+            // After 2 seconds, hide the waiting window
             setTimeout(function() {
                 hideWaitingScreen();
             }, 2000);
         }
     })
 }
+// Function to show the window of the match making
 function showWaitingScreen() {
-    // Creiamo un overlay per disabilitare l'interazione con la pagina
+    // Creation of an overlay to disable the interaction with the page
     let overlay = document.createElement('div');
     overlay.id = "waitingOverlay";
     overlay.style.position = "fixed";
@@ -100,9 +97,9 @@ function showWaitingScreen() {
     overlay.style.display = "flex";
     overlay.style.justifyContent = "center";
     overlay.style.alignItems = "center";
-    overlay.style.zIndex = "1000"; // Deve essere sopra gli altri elementi
+    overlay.style.zIndex = "1000"; // It is over other elements
 
-    // Creiamo il messaggio di attesa
+    // Creation of the waiting message
     let message = document.createElement('div');
     message.id = "matchMaking";
     message.style.backgroundColor = "white";
@@ -110,32 +107,31 @@ function showWaitingScreen() {
     message.style.borderRadius = "10px";
     message.style.textAlign = "center";
     message.style.fontSize = "20px";
-    //message.innerHTML = "Waiting for the opponent...";
 
-    // Aggiungiamo il messaggio all'overlay
+    // Add the message to the overlay
     overlay.appendChild(message);
 
-    // Aggiungiamo l'overlay al corpo della pagina
+    // Add the overlay to the body of the page
     document.body.appendChild(overlay);
 
-    // Disabilitiamo l'interazione con la pagina
+    // Disable the interaction of the page
     document.body.style.pointerEvents = "none";
 }
 
-// Funzione per nascondere la finestra di attesa
+// Function to hide the waiting window
 function hideWaitingScreen() {
-    // Troviamo e rimuoviamo l'overlay
+    // Remove the overlay
     let overlay = document.getElementById("waitingOverlay");
     if (overlay) {
         document.body.removeChild(overlay);
     }
 
-    // Riabilitiamo l'interazione con la pagina
+    // Enable the interaction with the page
     document.body.style.pointerEvents = "auto";
 }
 
-// remove the class unavailable to the cells of the grid that are adjacent the ships
-// the cells return with the original color
+// Remove the class unavailable to the cells of the grid that are adjacent the ships
+// The cells return with the original color
 function changeUserGrid(){
 
     let boardName = "user";
@@ -154,29 +150,30 @@ function changeUserGrid(){
             }
         });
 }
-
+// Function to enable or disable the opponent grid
 function changeOpponentGrid(activate){
 
     let boardName = "opponent";
 
     document.querySelectorAll(".cell").forEach((cell) => {
 
-        // For the cells in the grid1
+        // For the cells in the grid2
         if (cell.closest('#grid2')) {
 
             const [_, row, col] = cell.id.split(',').map(Number);
 
-            // For the cells that contains number of letters the listeners aren't associated
             let currentCell = document.getElementById(`${boardName},${row},${col}`);
-
+            // For the cells that contains number of letters the listeners aren't associated
             if(row !== 0 && col !== 0) {
                 if(activate) {
+                    // Activate the opponent's grid available cells
                     if((!currentCell.classList.contains("unavailable")) && (!currentCell.classList.contains("sink"))) {
                         currentCell.addEventListener("mouseover", changeCell);
                         currentCell.addEventListener("mouseout", restoreCell);
                         currentCell.addEventListener("click", shoot);
                     }
                 }else{
+                    // Deactivate the opponent's grid available cells
                     if (currentCell.classList.contains("eligible")){
                         currentCell.classList.remove("eligible");
                     }
@@ -188,19 +185,22 @@ function changeOpponentGrid(activate){
         }
     });
 }
+// Function to add a style to a cell when the mouse is over it
 function changeCell(e) {
-    const [_, row, col] = e.target.id.split(',').map(Number); // Estrae riga e colonna dalla cella
+    const [_, row, col] = e.target.id.split(',').map(Number); // Extract row and col of the cell
 
     document.getElementById(`opponent,${row},${col}`).classList.add("eligible");
 }
+// Function to remove a style to a cell when the mouse is out it
 function restoreCell(e) {
-    const [_, row, col] = e.target.id.split(',').map(Number); // Estrae riga e colonna dalla cella
+    const [_, row, col] = e.target.id.split(',').map(Number); // Extract row and col of the cell
 
     document.getElementById(`opponent,${row},${col}`).classList.remove("eligible");
 }
+// Function to shot
 function shoot(e) {
-    const [_, row, col] = e.target.id.split(',').map(Number); // Estrae riga e colonna dalla cella
+    const [_, row, col] = e.target.id.split(',').map(Number); // Extract row and col of the cell
     console.log("shot "+row+" - "+col);
+    // Send the hit cell to the Erlang server
     sendMoveMessage(row, col);
-    //document.getElementById(`opponent,${row},${col}`).classList.add("eligible");
 }

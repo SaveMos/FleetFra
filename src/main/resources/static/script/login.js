@@ -1,3 +1,4 @@
+// Function to manage the view of the login and signup forms
 function toggleForms() {
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
@@ -9,6 +10,8 @@ function toggleForms() {
         signupForm.style.display = 'block';
     }
 }
+// Remove a placeholder in the input field if the user writes or clicks on it
+// Add a placeholder in the input field if the user removes the inserted value or clicks out of it
 document.addEventListener('DOMContentLoaded', () => {
     const inputs = document.querySelectorAll('input');
     inputs.forEach(input => {
@@ -47,16 +50,14 @@ $(document).ready(function () {
             document.getElementById('error-login-password').style.display = 'block';
             isEmpty = true;
         }
-        console.log("username = "+username);
-        console.log("password = "+password);
-        // If no errors, submit the form (this is where you can handle the submission logic)
+        // If no errors, submit the form
         if (!isEmpty) {
-
+            // Create the message to send to the Java server
             let requestUser = {
                 username: username,
                 password: password
             };
-
+            // Send the message to the Java server
             $.ajax({
                 url: "http://10.2.1.26:5050/login",
                 data: JSON.stringify(requestUser),
@@ -64,20 +65,20 @@ $(document).ready(function () {
                 dataType: "json",
                 contentType: 'application/json',
                 success: function () {
-
+                    // If the user is not an admin add teh username to the userLog session and go to the game page
                     if (username === "admin") {
                         sessionStorage.setItem("userLog", "admin");
                         window.location.href = "admin.html";
 
                     } else {
                         sessionStorage.setItem("userLog", username);
-                        //sessionStorage.setItem("gameId", "");
                         window.location.href = "game.html";
                     }
 
                 },
                 error: function (xhr) {
                     let errorResponse = JSON.parse(xhr.responseText);
+                    // Show the error message if the password is wrong
                     document.getElementById("error-login-password").innerText = errorResponse.answer;
                     document.getElementById('error-login-password').style.display = 'block';
 
@@ -143,7 +144,7 @@ $(document).ready(function () {
                 password: password,
                 email: email
             };
-
+            // Send the message to the Java server
             $.ajax({
                 url: "http://10.2.1.26:5050/signup",
                 data: JSON.stringify(person),
@@ -155,6 +156,7 @@ $(document).ready(function () {
                     window.location.href = "game.html";
                 },
                 error: function (xhr) {
+                    // Show the error message if the username already exists
                     document.getElementById('error-signup-username').innerText = xhr.responseText;
                     document.getElementById('error-signup-username').style.display = 'block';
                 }

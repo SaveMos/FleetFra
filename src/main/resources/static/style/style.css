@@ -57,7 +57,7 @@ h2 {
     box-sizing: border-box;
 }
 .form-group input:focus {
-    outline: none; /* Rimuove il bordo aggiuntivo del browser */
+    outline: none; /* Remove the additional border of the browser */
     border-color: #256ec9;
     box-shadow: 0 0 5px #256ec9;
 }
@@ -102,7 +102,7 @@ h2 {
     height: 100vh;
     margin: 0;
     background-color: #f4f4f9;
-    overflow-y: auto; /* Aggiunge lo scroll verticale */
+    overflow-y: auto; /* Add the vertical scroll */
 }
 
 .fleetTitle {
@@ -134,13 +134,13 @@ h2 {
 .container {
     display: flex;
     gap: 30px;
-    margin-top: 20px; /* Distanza tra le griglie e il contenuto sopra */
+    margin-top: 20px; /* Distance between the two grids and the upper content */
 }
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(11, 30px); /* 10 colonne + 1 per etichetta */
-    grid-template-rows: repeat(11, 30px);    /* 10 righe + 1 per etichetta */
+    grid-template-columns: repeat(11, 30px); /* 10 col + 1 for label */
+    grid-template-rows: repeat(11, 30px);    /* 10 row + 1 for label */
     border: 2px solid #1a3398;
     background-color: white;
     border-collapse: collapse;
@@ -169,7 +169,6 @@ h3 {
     display: flex;
     align-items: center;
     gap: 10px;
-    /*margin-left: 40%;*/
 }
 
 #fleet-title{
@@ -179,7 +178,7 @@ h3 {
 }
 .fleet {
     display: flex;
-    justify-content: flex-start; /* Allinea gli elementi in fila */
+    justify-content: flex-start; /* Align the elements in a row */
     gap: 10px;
     margin-top: 20px;
 }
@@ -188,9 +187,9 @@ h3 {
     display: flex;
     justify-content: center;
     align-items: center;
-    position: relative; /* Necessario per il trascinamento */
+    position: relative; /* Necessary for the drag and drop */
     cursor: move;
-    transform-origin: center; /* Imposta il punto di rotazione al centro */
+    transform-origin: center;
     margin-bottom: 10px;
 }
 
