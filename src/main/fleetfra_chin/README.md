@@ -38,35 +38,37 @@ To set up and run the **FleetFra Chin** application, follow these steps:
 ### 1. Install Erlang
 
 First, ensure that Erlang is installed. You can download it from [Erlang's website](https://www.erlang.org/downloads). Make sure the version is compatible with the application.
+```bash
+apt update
+apt install -y erlang
+```
 
-### 2. Clone the Repository
+### 2. Install rebar3
+```bash
+apt install -y rebar3
+```
+### 3. Clone the Repository
 
 Clone the **FleetFra Chin** repository to your local machine:
 
 ```bash
-git clone https://github.com/your-repo/fleetfra_chin.git
+git clone https://github.com/SaveMos/FleetFra
 cd fleetfra_chin
 ```
 
-### 3. Compile the Application
+### 4. Compile and Run the Application
 
 After cloning the repository, compile the Erlang application using `rebar3`:
 
 ```bash
 rebar3 compile
 ```
-
 This will download and compile the necessary dependencies.
 
-### 4. Start the Application
-
-Once the application is compiled, start it using the Erlang shell:
-
 ```bash
-erl -s fleetfra_chin_app start
+rebar3 shell
 ```
-
-The application will start the supervisor and initialize the game server.
+This will start the web server.
 
 ### 5. Access the Web Server
 

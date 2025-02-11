@@ -26,7 +26,7 @@ public class TestFleetFraChinWebSocket {
     private static final String GAME_ID = FleetFraChinExecution.generateRandomString(20);
     private static final String PLAYER1_ID = "player111";
     private static final String PLAYER2_ID = "player222";
-    private static final String SERVER_URL = "ws://10.2.1.30:8080/ws";
+    private static final String SERVER_URL = "ws://10.2.1.27:8080/ws";
 
     private WebSocketClient client;
     private CountDownLatch latch;
