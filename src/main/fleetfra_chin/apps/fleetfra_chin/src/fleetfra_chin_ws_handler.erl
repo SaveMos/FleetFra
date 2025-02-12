@@ -32,6 +32,7 @@
 %%------------------------------------------------------------------------------
 
 init(Req, State) ->
+  io:format("WebSocket Starting~n"),
   %case extract_params(Req) of
     %{GameID, PlayerID} -> pass;
       %%fleetfra_chin_user_handler:start_link(GameID, PlayerID);
@@ -146,7 +147,6 @@ websocket_handle(_Data, State) ->
 %% @end
 %%------------------------------------------------------------------------------
 websocket_info({game_update, Response}, Req, State) ->
-  io:format("Player2 received game update: ~p~n", [Response]),
   case jsx:is_jsonable(Response) of
     true -> Message = jsx:encode(Response);
     false -> Message = "{\"error\": \"invalid json\"}"
@@ -156,10 +156,8 @@ websocket_info(_Info, Req, State) ->
   {ok, Req, State}.
 
 websocket_info({debug_message, Msg}, State) ->
-  io:format("Received debug message: ~p~n", [Msg]),
   {ok, State};
 websocket_info(_Info, State) ->
-  io:format("Info received ~p~n", [_Info]),
   {ok, State}.
 
 %%------------------------------------------------------------------------------
