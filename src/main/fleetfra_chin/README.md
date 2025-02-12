@@ -87,21 +87,14 @@ This message is used to initiate a new game between two players. It provides the
 ```json
 {
   "game_id": "game123",
-  "player1_battlefield": [
+  "battlefield": [
     {"row": 0, "value": 0, "col": 0},
     {"row": 0, "value": 0, "col": 1},
     {"row": 1, "value": 0, "col": 0},
     {"row": 1, "value": 0, "col": 1}
   ],
-  "player2": "Player2",
-  "player1": "Player1",
-  "type_request": "start_game",
-  "player2_battlefield": [
-    {"row": 0, "value": 0, "col": 0},
-    {"row": 0, "value": 0, "col": 1},
-    {"row": 1, "value": 0, "col": 0},
-    {"row": 1, "value": 0, "col": 1}
-  ]
+  "player": "Player1",
+  "type_request": "start_game"
 }
 ```
 

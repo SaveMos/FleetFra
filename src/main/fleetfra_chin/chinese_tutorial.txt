@@ -1,4 +1,0 @@
-https://ezoeryou.github.io/blog/article/2020-04-07-tutorial.html
-
-sudo apt-get update
-sudo apt-get install build-essential

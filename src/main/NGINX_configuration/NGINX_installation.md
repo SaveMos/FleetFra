@@ -1,31 +1,33 @@
 
-## **Passaggi:**
-1. **Installazione di NGINX**
-2. **Configurazione del Load Balancer con hashing su GameID**
-3. **Riavvio e verifica**
+---
+
+## **Steps:**
+1. **Install NGINX**
+2. **Configure the Load Balancer with hashing on GameID**
+3. **Restart and Verify**
 
 ---
 
-### **1. Installare NGINX sul nodo**
-Accedi al container e installa NGINX:
+### **1. Install NGINX on the Node**
+Access the container and install NGINX:
 ```bash
 apt update && apt install -y nginx
 ```
-Oppure, se usi Alpine Linux nei container:
+Alternatively, if you're using Alpine Linux in containers:
 ```bash
 apk add nginx
 ```
-Avvia il servizio:
+Start the service:
 ```bash
 service nginx start
 ```
 
 ---
 
-### **2. Configurare il Load Balancer**
-Modifica il file di configurazione di NGINX (di solito in `/etc/nginx/nginx.conf` o `/etc/nginx/conf.d/default.conf`).
+### **2. Configure the Load Balancer**
+Edit the NGINX configuration file (usually located at `/etc/nginx/nginx.conf` or `/etc/nginx/conf.d/default.conf`).
 
-Aggiungi la configurazione:
+Add the following configuration:
 ```nginx
 user www-data;
 worker_processes auto;
@@ -91,28 +93,28 @@ http {
 }
 ```
 
-**Spiegazione:**
-- `hash $arg_GameID consistent;` → L'hashing su `GameID` assicura che tutte le richieste di una partita vadano sempre allo stesso nodo.
-- I tre server Erlang ascoltano su `8080` (modifica la porta se serve).
-- Forwardiamo gli header per preservare l'IP originale del client.
+**Explanation:**
+- `hash $arg_GameID consistent;` → Hashing on `GameID` ensures that all requests from a match are always routed to the same node.
+- The three Erlang servers are listening on `8080` (modify the port if needed).
+- Forwarding headers to preserve the original client IP.
 
 ---
 
-### **3. Riavviare e Testare**
-Riavvia NGINX per applicare le modifiche:
+### **3. Restart and Test**
+Restart NGINX to apply the changes:
 ```bash
 service nginx restart
 ```
-Oppure:
+Alternatively:
 ```bash
 nginx -s reload
 ```
 
-**Test con `curl` (simulando diversi `GameID`):**
+**Test with `curl` (simulating different `GameID`s):**
 ```bash
 curl "http://10.2.1.27/?GameID=12345"
 curl "http://10.2.1.27/?GameID=67890"
 ```
-Ogni `GameID` verrò gestito sempre allo stesso nodo.
+Each `GameID` will always be handled by the same node.
 
----
+--- 

@@ -47,9 +47,9 @@ start_link() ->
 %%-------------------------------------------------------------------
 init([]) ->
   % Define supervisor flags and child specifications
-  SupFlags = #{strategy => one_for_all,   % Supervisor strategy: all children must succeed/fail together
-    intensity => 0,                       % Optional intensity level (not used in this case)
-    period => 1},                         % Period in seconds (not used in this case)
+  SupFlags = #{strategy => one_for_one,   % Supervisor strategy: each child is managed independently
+    intensity => 3,                       % Maximum 3 restarts within the defined period
+    period => 5},                         % Period in seconds (not used in this case)
 
   % No child processes to supervise, so we define an empty list of child specifications
   ChildSpecs = [],
