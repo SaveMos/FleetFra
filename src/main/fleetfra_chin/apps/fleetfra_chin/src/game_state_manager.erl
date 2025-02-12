@@ -23,7 +23,12 @@
 -define(ETS_TABLE, game_state_table).
 
 %% List of known nodes in the cluster
--define(KNOWN_NODES, ['root@10.2.1.30', 'root@10.2.1.29', 'root@10.2.1.28']).
+-define(KNOWN_NODES, ['fleetfra30@10.2.1.30', 'fleetfra29@10.2.1.29', 'fleetfra28@10.2.1.28']).
+
+% 10.2.1.30  fleetfra30
+% 10.2.1.29  fleetfra29
+% 10.2.1.28  fleetfra28
+
 
 
 %%==============================================================================%%
