@@ -22,6 +22,10 @@
 -record(game, {game_id, players, battlefields, current_turn, game_over, winner, created_at}).
 -define(ETS_TABLE, game_state_table).
 
+%% List of known nodes in the cluster
+-define(KNOWN_NODES, ['root@10.2.1.30', 'root@10.2.1.29', 'root@10.2.1.28']).
+
+
 %%==============================================================================%%
 %% API for ETS Management
 %%==============================================================================%%
@@ -104,6 +108,7 @@ init([]) ->
 %%-------------------------------------------------------------------
 handle_call({put, GameID, GameState}, _From, State) ->
   ets:insert(?ETS_TABLE, {GameID, GameState}),
+  propagate_update({sync_put, GameID, GameState}),
   {reply, ok, State};
 
 %%-------------------------------------------------------------------
@@ -130,6 +135,7 @@ handle_call({get, GameID}, _From, State) ->
 %%-------------------------------------------------------------------
 handle_call({delete, GameID}, _From, State) ->
   ets:delete(?ETS_TABLE, GameID),
+  propagate_update({sync_delete, GameID}),
   {reply, ok, State};
 
 %%-------------------------------------------------------------------
@@ -173,6 +179,15 @@ handle_cast({pop}, [Head | Tail]) ->
 handle_cast({pop}, []) ->
   {noreply, []}.
 
+handle_info({sync_put, GameID, GameState}, State) ->
+  ets:insert(?ETS_TABLE, {GameID, GameState}), % Always overwrite the existing game state
+  {noreply, State};
+
+handle_info({sync_delete, GameID}, State) ->
+  ets:delete(?ETS_TABLE, GameID),
+  {noreply, State};
+
+
 %%-------------------------------------------------------------------
 %% @author SaveMos
 %% @copyright (C) 2025, <FleetFra>
@@ -191,7 +206,9 @@ handle_info(clean_old_games, State) ->
   lists:foreach(fun({GameID, GameState}) ->
     CreatedAt = GameState#game.created_at,
     case Now - CreatedAt >= ExpirationTime of
-      true -> ets:delete(?ETS_TABLE, GameID);
+      true ->
+        ets:delete(?ETS_TABLE, GameID),
+        propagate_update({sync_delete, GameID});
       false -> ok
     end
                 end, Games),
@@ -209,3 +226,18 @@ handle_info(clean_old_games, State) ->
 %%-------------------------------------------------------------------
 handle_info(_Msg, State) ->
   {noreply, State}.
+
+%%==============================================================================%%
+%% Synchronization Helpers
+%%==============================================================================%%
+
+propagate_update(Message) ->
+  lists:foreach(fun(Node) ->
+    case net_adm:ping(Node) of
+      pong ->
+        rpc:cast(Node, ?MODULE, handle_info, [Message]); % Async message.
+      _ ->
+        io:format("Nodo non raggiungibile [~p]~n", [Node]),
+        ok % Ignore unreachable nodes
+    end
+                end, ?KNOWN_NODES).
