@@ -34,17 +34,6 @@ nano ../etc/nginx/nginx.conf
 
 Copy and Paste the following configuration, located at `nginx.conf`.
 
-Then, restart the NGINX service:
-```bash
-nginx -s reload
-service nginx restart
-```
-
-**Explanation:**
-- `hash $arg_GameID consistent;` → Hashing on `GameID` ensures that all requests from a match are always routed to the same node.
-- The three Erlang servers are listening on `8080` (modify the port if needed).
-- Forwarding headers to preserve the original client IP.
-
 ---
 
 ### **3. Restart and Test**
