@@ -40,10 +40,7 @@ Copy and Paste the following configuration, located at `nginx.conf`.
 Restart NGINX to apply the changes:
 ```bash
 service nginx restart
-```
-Alternatively:
-```bash
-nginx -s reload
+nginx -t && service nginx reload
 ```
 
 **Test with `curl` (simulating different `GameID`s):**
