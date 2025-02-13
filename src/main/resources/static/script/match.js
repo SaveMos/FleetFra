@@ -9,12 +9,15 @@ let last_update = null; // Stores the timestamp of the last game update
 let turn; // Boolean flag indicating if it's the player's turn
 let user1, user2, game_winner; // Store player names and winner
 let start = false; // Variable to let the waiting player timer start
+let error_start = false;
 
 // Function to initialize the WebSocket
 function initializeWebSocket(current_match, current_battlefield) {
-    // Retrieve the game id and the player battlefield
-    game_id = current_match;
-    player_battlefield = current_battlefield;
+    // Retrieve the game id and the player battlefield only at the start of the match
+    if(!error_start) {
+        game_id = current_match;
+        player_battlefield = current_battlefield;
+    }
     // Create a web socket connected to the load balancer with the game id as attribute
     const serverAddress = `ws://10.2.1.27:8080/ws?GameID=${game_id}`;
     socket = new WebSocket(serverAddress);
@@ -22,7 +25,10 @@ function initializeWebSocket(current_match, current_battlefield) {
     socket.addEventListener("open", (event) => {
         console.log("WebSocket connection established:", event);
         //When the websocket is created, the startMessage of the player is sent to the server
-        sendStartMessage();
+        if(!error_start) {
+            sendStartMessage();
+        }
+
     });
 
     // Server sent a message
@@ -34,11 +40,20 @@ function initializeWebSocket(current_match, current_battlefield) {
     // Socket closed
     socket.addEventListener("close", (event) => {
         console.log("WebSocket connection closed:", event);
+        //Reopen the socket if it is closed during a match
+        error_start = true;
+        setTimeout(initializeWebSocket, 2000);
+
     });
+
 
     // Error during the connection
     socket.addEventListener("error", (event) => {
         console.error("WebSocket error:", event);
+        //Reopen the socket if it is closed during a match
+        error_start = true;
+        setTimeout(initializeWebSocket, 2000);
+
     });
 }
 
@@ -95,8 +110,10 @@ function sendGetGameMessage(){
         }, 1000);
 
         console.log("Get game info message sent:", message);
+
     } else {
-        console.error("WebSocket is not open.");
+        console.log("WebSocket is not open.");
+
     }
 }
 
