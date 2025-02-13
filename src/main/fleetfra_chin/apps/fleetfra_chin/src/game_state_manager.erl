@@ -19,6 +19,8 @@
 %% GenServer Callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]).
 
+-export([handle_sync_call/1]).
+
 -record(game, {game_id, players, battlefields, current_turn, game_over, winner, created_at}).
 -define(ETS_TABLE, game_state_table).
 
@@ -99,7 +101,9 @@ delete_game_state(GameID) ->
 %%-------------------------------------------------------------------
 init([]) ->
   ets:new(?ETS_TABLE, [named_table, public, set]),
-  % Start the periodic cleanup process every hour
+  erlang:set_cookie(node(), 'fleetfra'),
+
+% Start the periodic cleanup process every hour
   erlang:send_after(fleetfra_chin_configuration:get_auto_clean_period(), erlang:self(), clean_old_games),
   {ok, #{}}.
 
@@ -113,7 +117,8 @@ init([]) ->
 %%-------------------------------------------------------------------
 handle_call({put, GameID, GameState}, _From, State) ->
   ets:insert(?ETS_TABLE, {GameID, GameState}),
-  %propagate_update({sync_put, GameID, GameState}),
+  propagate_update({sync_put, GameID, GameState}),
+  %verify_propagation(GameID, GameState),
   {reply, ok, State};
 
 %%-------------------------------------------------------------------
@@ -140,7 +145,7 @@ handle_call({get, GameID}, _From, State) ->
 %%-------------------------------------------------------------------
 handle_call({delete, GameID}, _From, State) ->
   ets:delete(?ETS_TABLE, GameID),
-  %propagate_update({sync_delete, GameID}),
+  propagate_update({sync_delete, GameID}),
   {reply, ok, State};
 
 %%-------------------------------------------------------------------
@@ -159,6 +164,16 @@ handle_call({update, GameID, NewGameState}, _From, State) ->
     [] ->
       {reply, {error, not_found}, State}
   end.
+
+handle_sync_call({sync_put, GameID, GameState}) ->
+  ets:insert(?ETS_TABLE, {GameID, GameState}),
+  {reply, ok};
+handle_sync_call({sync_delete, GameID}) ->
+  ets:delete(?ETS_TABLE, GameID),
+  {reply, ok}.
+
+
+
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -184,12 +199,7 @@ handle_cast({pop}, [Head | Tail]) ->
 handle_cast({pop}, []) ->
   {noreply, []}.
 
-handle_info({sync_put, GameID, GameState}, State) ->
-  ets:insert(?ETS_TABLE, {GameID, GameState}),
-  ok;
-handle_info({sync_delete, GameID}, State) ->
-  ets:delete(?ETS_TABLE, GameID),
-  ok;
+
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -210,8 +220,8 @@ handle_info(clean_old_games, State) ->
     CreatedAt = GameState#game.created_at,
     case Now - CreatedAt >= ExpirationTime of
       true ->
-        ets:delete(?ETS_TABLE, GameID);
-        %propagate_update({sync_delete, GameID});
+        ets:delete(?ETS_TABLE, GameID),
+        propagate_update({sync_delete, GameID});
       false -> ok
     end
                 end, Games),
@@ -235,23 +245,56 @@ handle_info(_Msg, State) ->
 %%==============================================================================%%
 
 propagate_update(Message) ->
+  %io:format("Known nodes: ~p~n", [?KNOWN_NODES]),  % Log della lista dei nodi
   lists:foreach(fun(Node) ->
-    % Verifica se il nodo è diverso dal nodo corrente
+    %io:format("Pinging node ~p: ~p~n", [Node, net_adm:ping(Node)]), % Log per vedere il risultato del ping
     case Node =/= node() of
-      true -> % Se i nodi sono diversi, invia il messaggio
+      true -> % Se il nodo è diverso, prova a inviare il messaggio
+        %io:format("Trying to send message to ~p~n", [Node]),  % Log di tentativo di invio
         case net_adm:ping(Node) of
-          pong ->
-            case rpc:cast(Node, ?MODULE, handle_info, [Message]) of
-              ok ->
-                io:format("Message sent successfully to ~p~n", [Node]);
-              _ ->
-                io:format("Failed to send message to ~p~n", [Node])
+          pong -> % Se il nodo remoto è raggiungibile
+            %%io:format("Node ~p is reachable, sending message ~n", [Node]),
+            try
+              rpc:call(Node, ?MODULE, handle_sync_call, [Message])
+            of
+              {reply, ok} ->
+                %io:format("Message sent successfully to ~p~n", [Node]),
+                pass;
+              {badrpc, Reason} ->
+                %io:format("RPC call failed to ~p with reason: ~p~n", [Node, Reason]);
+                pass;
+              {error, Reason} ->
+                pass;
+                %io:format("RPC call failed to ~p with reason: ~p~n", [Node, Reason]);
+              Unexpected ->
+                pass
+                %io:format("Unexpected RPC result from ~p: ~p~n", [Node, Unexpected])
+            catch
+              error:Reason ->
+                %io:format("RPC failed to ~p with exception: ~p~n", [Node, Reason])
+                pass
             end;
-          _ ->
-            io:format("Nodo non raggiungibile [~p]~n", [Node]),
-            ok % Ignore unreachable nodes
+          _ -> % Nodo remoto non raggiungibile
+            %io:format("Node ~p is not reachable~n", [Node])
+            pass
         end;
       false ->
+        %io:format("Skipping sending message to the current node ~p~n", [node()]),
         ok % Non inviare il messaggio al nodo stesso
     end
                 end, ?KNOWN_NODES).
+
+
+verify_propagation(GameID, ExpectedState) ->
+  lists:foreach(fun(Node) ->
+    case rpc:call(Node, ets, lookup, [?ETS_TABLE, GameID]) of
+      [{GameID, ExpectedState}] ->
+        io:format("Propagation successful on node ~p~n", [Node]);
+      [] ->
+        io:format("Propagation failed on node ~p (data not found)~n", [Node]);
+      Other ->
+        io:format("Unexpected result from node ~p: ~p~n", [Node, Other])
+    end
+                end, ?KNOWN_NODES).
+
+
