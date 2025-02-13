@@ -113,7 +113,7 @@ init([]) ->
 %%-------------------------------------------------------------------
 handle_call({put, GameID, GameState}, _From, State) ->
   ets:insert(?ETS_TABLE, {GameID, GameState}),
-  propagate_update({sync_put, GameID, GameState}),
+  %propagate_update({sync_put, GameID, GameState}),
   {reply, ok, State};
 
 %%-------------------------------------------------------------------
@@ -140,7 +140,7 @@ handle_call({get, GameID}, _From, State) ->
 %%-------------------------------------------------------------------
 handle_call({delete, GameID}, _From, State) ->
   ets:delete(?ETS_TABLE, GameID),
-  propagate_update({sync_delete, GameID}),
+  %propagate_update({sync_delete, GameID}),
   {reply, ok, State};
 
 %%-------------------------------------------------------------------
@@ -185,13 +185,11 @@ handle_cast({pop}, []) ->
   {noreply, []}.
 
 handle_info({sync_put, GameID, GameState}, State) ->
-  ets:insert(?ETS_TABLE, {GameID, GameState}), % Always overwrite the existing game state
-  {noreply, State};
-
+  ets:insert(?ETS_TABLE, {GameID, GameState}),
+  ok;
 handle_info({sync_delete, GameID}, State) ->
   ets:delete(?ETS_TABLE, GameID),
-  {noreply, State};
-
+  ok;
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -212,8 +210,8 @@ handle_info(clean_old_games, State) ->
     CreatedAt = GameState#game.created_at,
     case Now - CreatedAt >= ExpirationTime of
       true ->
-        ets:delete(?ETS_TABLE, GameID),
-        propagate_update({sync_delete, GameID});
+        ets:delete(?ETS_TABLE, GameID);
+        %propagate_update({sync_delete, GameID});
       false -> ok
     end
                 end, Games),
@@ -238,11 +236,22 @@ handle_info(_Msg, State) ->
 
 propagate_update(Message) ->
   lists:foreach(fun(Node) ->
-    case net_adm:ping(Node) of
-      pong ->
-        rpc:cast(Node, ?MODULE, handle_info, [Message]); % Async message.
-      _ ->
-        io:format("Nodo non raggiungibile [~p]~n", [Node]),
-        ok % Ignore unreachable nodes
+    % Verifica se il nodo è diverso dal nodo corrente
+    case Node =/= node() of
+      true -> % Se i nodi sono diversi, invia il messaggio
+        case net_adm:ping(Node) of
+          pong ->
+            case rpc:cast(Node, ?MODULE, handle_info, [Message]) of
+              ok ->
+                io:format("Message sent successfully to ~p~n", [Node]);
+              _ ->
+                io:format("Failed to send message to ~p~n", [Node])
+            end;
+          _ ->
+            io:format("Nodo non raggiungibile [~p]~n", [Node]),
+            ok % Ignore unreachable nodes
+        end;
+      false ->
+        ok % Non inviare il messaggio al nodo stesso
     end
                 end, ?KNOWN_NODES).

@@ -92,8 +92,10 @@ public class FleetFraChinExecution {
         ));
     }
 
-    private static final int ROWS = 10;
+    private static final int ROWS = 11;
     private static final int COLS = ROWS;
+    private static final int MIN_ROW = 1;
+    private static final int MIN_COL = MIN_ROW;
     private static final int[] SHIP_LENGTHS = {3, 4, 5};
     private static final Random RANDOM = new Random();
 
@@ -102,8 +104,8 @@ public class FleetFraChinExecution {
         int[][] grid = new int[ROWS][COLS];
 
         // Initialize battlefield with empty cells
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
+        for (int row = MIN_ROW; row < ROWS; row++) {
+            for (int col = MIN_COL; col < COLS; col++) {
                 battlefield.add(new HashMap<>(Map.of("row", row, "col", col, "value", 0)));
             }
         }
@@ -114,8 +116,8 @@ public class FleetFraChinExecution {
         }
 
         // Update battlefield based on grid
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
+        for (int row = MIN_ROW; row < ROWS; row++) {
+            for (int col = MIN_COL; col < COLS; col++) {
                 if (grid[row][col] == 1) {
                     setCell(battlefield, row, col);
                 }
@@ -130,8 +132,8 @@ public class FleetFraChinExecution {
         int[][] grid = new int[ROWS][COLS];
 
         // Initialize battlefield with empty cells
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
+        for (int row = MIN_ROW; row < ROWS; row++) {
+            for (int col = MIN_COL; col < COLS; col++) {
                 battlefield.add(new HashMap<>(Map.of("row", row, "col", col, "value", 0)));
             }
         }
@@ -142,8 +144,8 @@ public class FleetFraChinExecution {
         }
 
         // Update battlefield based on grid
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
+        for (int row = MIN_ROW; row < ROWS; row++) {
+            for (int col = MIN_COL; col < COLS; col++) {
                 if (grid[row][col] == 1 && !zero) {
                     setCell(battlefield, row, col);
                 }

@@ -82,7 +82,7 @@ process_request(Body) ->
 
             case fleetfra_game:make_move(GameID, {Player, {Row, Col}}) of
                 {ok, NewValue, WaitingPlayerAtom} ->
-                    build_response(<<"OK: Move accepted [", (erlang:integer_to_binary(NewValue))/binary, "]">>, GameID, Player, WaitingPlayerAtom);
+                    build_response(<<"OK: Move accepted [", (utility:to_binary(NewValue))/binary, "]">>, GameID, Player, WaitingPlayerAtom);
 
                 {error, invalid_move} ->
                     build_response(<<"Invalid move">>);

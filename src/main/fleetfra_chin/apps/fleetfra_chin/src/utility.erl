@@ -15,7 +15,7 @@
 -author("Saverio").
 
 %% API
--export([bin_to_atom/1, to_str/1, concat_game_player/2]).
+-export([bin_to_atom/1, to_str/1, concat_game_player/2, to_binary/1]).
 
 %%-------------------------------------------------------------------
 %% @doc Converts a binary object into an atom.
@@ -60,3 +60,16 @@ to_str(Input) when erlang:is_atom(Input) ->
 %%-------------------------------------------------------------------
 concat_game_player(GameID, PlayerID)  ->
   erlang:list_to_atom(to_str(GameID) ++ "_" ++ to_str(PlayerID)).
+
+
+to_binary(Value) when is_integer(Value) ->
+  integer_to_binary(Value);
+
+to_binary(Value) when erlang:is_binary(Value) ->
+  Value;
+
+to_binary(Value) when is_list(Value) ->
+  list_to_binary(Value);
+
+to_binary(Value) when is_atom(Value) ->
+  atom_to_binary(Value, utf8).
