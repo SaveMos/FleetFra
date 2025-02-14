@@ -17,8 +17,8 @@
 start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}) ->
   %% Initialize ETS table
   init_ets(),
-  PlayerAtom1 = utility:bin_to_atom(Player1),
-  PlayerAtom2 = utility:bin_to_atom(Player2),
+  PlayerAtom1 = utility:to_atom(Player1),
+  PlayerAtom2 = utility:to_atom(Player2),
 
   %% Create the initial game state using the correct map syntax
   GameState = #game{
@@ -57,7 +57,7 @@ start_game(GameID, {Player1, Player2, Battlefield1, Battlefield2}) ->
 
 start_game_client(GameID, {Player, Battlefield}) ->
   init_ets(), %% Initialize the ETS table.
-  PlayerAtom = utility:bin_to_atom(Player), % The player that made this request.
+  PlayerAtom = utility:to_atom(Player), % The player that made this request.
 
   case game_state_manager:get_game_state(GameID) of
     {ok, GameState} ->
@@ -276,12 +276,12 @@ change_turn(GameID) ->
 %% @end
 %%-------------------------------------------------------------------
 make_move(GameID, {Player, {Row, Col}}) ->
-  PlayerAtom = utility:bin_to_atom(Player),
+  PlayerAtom = utility:to_atom(Player),
   case game_state_manager:get_game_state(GameID) of
     {ok, GameState} ->
       case GameState#game.current_turn of
         PlayerAtom ->
-          WaitingPlayerAtom = GameState#game.waiting_player,
+          %WaitingPlayerAtom = GameState#game.waiting_player,
           %io:format("OK: ~p can play!~n" , [PlayerAtom]),
           case maps:find(PlayerAtom, GameState#game.battlefields) of
             {ok, PlayerBattlefield} ->
@@ -441,7 +441,7 @@ update_battlefield(Battlefield, Row, Col) ->
 %%-------------------------------------------------------------------
 update_game_state(GameState, Player, NewBattlefield, NewValue) ->
   %% Convert Player to an atom if it's a binary
-  PlayerAtom = utility:bin_to_atom(Player),
+  PlayerAtom = utility:to_atom(Player),
 
   %% Update the battlefields map with the correct key (PlayerAtom)
   NewBattlefields = maps:put(PlayerAtom, NewBattlefield, GameState#game.battlefields),

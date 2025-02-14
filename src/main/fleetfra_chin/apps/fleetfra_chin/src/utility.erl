@@ -15,7 +15,7 @@
 -author("Saverio").
 
 %% API
--export([bin_to_atom/1, to_str/1, concat_game_player/2, to_binary/1]).
+-export([to_atom/1, to_str/1, concat_game_player/2, to_binary/1]).
 
 %%-------------------------------------------------------------------
 %% @doc Converts a binary object into an atom.
@@ -25,11 +25,17 @@
 %%         Otherwise, it is returned unchanged.
 %% @end
 %%-------------------------------------------------------------------
-bin_to_atom(Bin) ->
-  case erlang:is_binary(Bin) of
-    true -> erlang:binary_to_atom(Bin, utf8);
-    false -> Bin
-  end.
+to_atom(Value) when is_atom(Value) ->
+  Value;
+
+to_atom(Value) when is_integer(Value) ->
+  atom_to_list(Value);
+
+to_atom(Value) when is_binary(Value) ->
+  binary_to_atom(Value, utf8);
+
+to_atom(Value) when is_list(Value) ->
+  list_to_atom(Value).
 
 %%-------------------------------------------------------------------
 %% @doc Converts an input value into a string (character list).

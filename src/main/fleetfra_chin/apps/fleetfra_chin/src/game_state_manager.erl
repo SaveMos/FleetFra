@@ -118,6 +118,7 @@ init([]) ->
 handle_call({put, GameID, GameState}, _From, State) ->
   ets:insert(?ETS_TABLE, {GameID, GameState}),
   propagate_update({sync_put, GameID, GameState}),
+  %timer:sleep(1000),
   %verify_propagation(GameID, GameState),
   {reply, ok, State};
 
