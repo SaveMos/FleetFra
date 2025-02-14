@@ -1,30 +1,50 @@
-La relazione tra max_fails/fail_timeout e proxy_next_upstream_timeout è la seguente:
+# NGINX Load Balancer Configuration for Erlang Web Servers
 
-proxy_next_upstream_timeout 1s:
+## Overview
+This configuration sets up NGINX as a WebSocket load balancer for three Erlang-based web servers. It ensures session persistence using consistent hashing and provides failover mechanisms for high availability.
 
-Definisce il tempo massimo che Nginx aspetta per una risposta prima di considerare un server non responsivo e provare un altro server disponibile.
-Questo si applica solo per una singola richiesta.
-max_fails=2 fail_timeout=5s:
+## Configuration Breakdown
 
-Se un server fallisce 2 volte consecutive in un intervallo di 5 secondi, Nginx lo considera temporaneamente non disponibile e smette di inviare richieste a quel server per un certo periodo.
-Dopo il fail_timeout, il server viene testato nuovamente con una richiesta reale. Se risponde correttamente, viene reinserito nel pool.
-Come Funzionano Insieme?
-Primo errore:
+### General Settings
+- **User & Processes**
+    - `user www-data;` → Runs NGINX as a non-root user.
+    - `worker_processes auto;` → Automatically adjusts worker processes based on CPU cores.
 
-Se un server non risponde entro 1 secondo, Nginx considera la richiesta fallita e passa al prossimo server disponibile nel pool (se c'è).
-Questo è controllato da proxy_next_upstream_timeout 1s.
-Secondo errore (entro 5 secondi):
+- **Network & Performance**
+    - `worker_connections 768;` → Allows up to 768 connections per worker.
+    - `sendfile on;` → Enables efficient file transfers.
+    - `tcp_nopush on;` → Optimizes TCP packets.
 
-Se un server fallisce ancora entro 5 secondi, raggiunge il limite definito da max_fails=2, e quindi viene temporaneamente rimosso dal pool.
-Dopo fail_timeout=5s:
+- **Logging**
+    - `access_log /var/log/nginx/access.log;` → Logs successful requests.
+    - `error_log /var/log/nginx/error.log;` → Logs errors.
 
-Il server viene testato automaticamente.
-Se risponde correttamente, viene reintrodotto nel pool immediatamente senza bisogno di un riavvio.
-Caso Pratico
-Supponiamo di avere tre server e uno di essi inizia ad avere problemi:
+### Load Balancing & WebSocket Handling
+- **Upstream Block (Backend Servers)**
+    - `upstream erlang_servers { ... }` → Defines backend Erlang servers.
+    - `hash $arg_GameID consistent;` → Ensures that the same client request is always routed to the same backend server.
+    - `server 10.2.1.X:8080 max_fails=5 fail_timeout=30s;`
+        - If a server fails **5 times** within **30 seconds**, it is temporarily removed from rotation.
 
-Nginx invia una richiesta a 10.2.1.30, ma non risponde entro 1 secondo → Passa a 10.2.1.29.
-Nginx invia un’altra richiesta a 10.2.1.30, ma fallisce di nuovo entro 5 secondi → Lo esclude temporaneamente.
-Dopo 5 secondi, Nginx prova di nuovo 10.2.1.30 con una richiesta reale.
-Se risponde correttamente, viene riattivato nel pool immediatamente.
-Se fallisce di nuovo, rimane escluso per altri 5 secondi.
+- **WebSocket Proxy Settings**
+    - `proxy_pass http://erlang_servers;` → Sends requests to the Erlang backend.
+    - `proxy_http_version 1.1;` → Uses HTTP/1.1, necessary for WebSockets.
+    - `proxy_set_header Upgrade $http_upgrade;` → Enables WebSocket connection upgrades.
+    - `proxy_set_header Connection "Upgrade";` → Keeps WebSocket connections alive.
+    - `proxy_set_header X-Real-IP $remote_addr;` → Passes client IP to the backend.
+
+### Fault Detection & Failover
+- **Error Handling**
+    - `proxy_next_upstream error timeout http_500 http_502 http_503 http_504 invalid_header;`
+        - If a request fails due to network errors, timeouts, or server-side failures (HTTP 500+), another backend is tried.
+
+- **Retry Mechanism**
+    - `proxy_next_upstream_timeout 1s;`
+        - If a failure occurs, NGINX waits **1 second** before attempting a retry.
+    - `proxy_next_upstream_tries 2;`
+        - NGINX retries up to **2 times** before giving up, and try another node of the list.
+
+### Conclusion
+This configuration ensures efficient WebSocket handling, session persistence using hashing, and a robust failover mechanism. If a server experiences repeated failures, it is temporarily removed and retried after the specified timeout period.
+
+---
