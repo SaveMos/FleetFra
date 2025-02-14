@@ -74,6 +74,12 @@ public class UserService {
                 ret.add(match.player2);
             }
 
+            try {
+                Thread.sleep(500); // Half of a second of delay.
+            }catch (InterruptedException e){
+                Thread.currentThread().interrupt();
+            }
+
             return ret; // No match found yet, still waiting
         }
     }
