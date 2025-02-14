@@ -286,9 +286,12 @@ propagate_update(Message) ->
           pong -> % Remote node reachable.
             %%io:format("Node ~p is reachable, sending message ~n", [Node]),
             try
-              rpc:call(Node, ?MODULE, handle_sync_call, [Message]) % Async operation.
+              rpc:cast(Node, ?MODULE, handle_sync_call, [Message]) % Async operation.
             of
               {reply, ok} ->
+                %io:format("Message sent successfully to ~p~n", [Node]),
+                pass;
+              true ->
                 %io:format("Message sent successfully to ~p~n", [Node]),
                 pass;
               {badrpc, Reason} ->

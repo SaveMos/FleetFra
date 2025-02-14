@@ -293,7 +293,7 @@ make_move(GameID, {Player, {Row, Col}}) ->
                       % The game is already ended, so the other player won.
                       case GameState#game.winner of
                         PlayerAtom ->
-                          {fin, winner, WaitingPlayerAtom}; % Player wins
+                          {fin, winner}; % Player wins
                         _ ->
                           game_state_manager:delete_game_state(GameID),
                           %websocket_manager:remove_pid(GameID, Player),
@@ -313,14 +313,14 @@ make_move(GameID, {Player, {Row, Col}}) ->
                             true ->
                               case NewGameState#game.winner of
                                 PlayerAtom ->
-                                  {fin, winner, WaitingPlayerAtom}; % Player wins
+                                  {fin, winner}; % Player wins
                                 _ ->
                                   game_state_manager:delete_game_state(GameID),
                                   %websocket_manager:remove_pid(GameID, Player),
                                   {fin, loser} % Player loses
                               end;
                             _ ->
-                              {ok, NewValue, WaitingPlayerAtom} % Game continues
+                              {ok, NewValue} % Game continues
                           end;
                         {error , out_of_bounds} ->
                           {error, out_of_bound_coordinates}; % Move out of bounds
