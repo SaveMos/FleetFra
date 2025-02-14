@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import it.unipi.dsmt.FleetFra.util.SessionManagement;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 //this class manages HTTP requests and every response is a JSON object
@@ -53,7 +53,7 @@ public class UserController implements UserControllerInterface {
 
     //class to manage the game
     UserService userService = new UserService();
-    HashMap<String, Matchmaking> waitingQueue = new HashMap<>();
+    ConcurrentHashMap<String, Matchmaking> waitingQueue = new ConcurrentHashMap<>();
 
     //endpoint API for game
     @Async
