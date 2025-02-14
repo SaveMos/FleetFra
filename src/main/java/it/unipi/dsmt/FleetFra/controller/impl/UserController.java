@@ -74,9 +74,7 @@ public class UserController implements UserControllerInterface {
             System.out.println(jsonResult);
 
 
-            synchronized (waitingQueue) {
-               waitingQueue.remove(match.getFirst());
-            }
+            waitingQueue.remove(match.getFirst());
 
             return new ResponseEntity<>(jsonResult, HttpStatus.OK);
         }
