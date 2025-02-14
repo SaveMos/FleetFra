@@ -109,11 +109,11 @@ handle_call({get_opponent_pid, GameID, PlayerID , OpponentID}, _From, State) ->
   GameID_str = utility:to_str(GameID),
   io:format("Searching for opponent PID for GameID: ~p, PlayerID: ~p~n", [GameID_str, PlayerID_Str]),
   case ets:lookup(?ETS_TABLE, {GameID_str, PlayerID_Str}) of
-    [{_, PID}] ->
+    [{ok, PID}] ->
       OpponentID_Str = utility:to_str(OpponentID),
-      io:format("Looking for opponent: ~p~n", [OpponentID_Str]),
+      io:format("~p Looking for opponent: ~p~n", [PID , OpponentID_Str]),
       case ets:lookup(?ETS_TABLE, {GameID_str, OpponentID_Str}) of
-        [{_, OpponentPID}] ->
+        [{ok, OpponentPID}] ->
           io:format("Found: ~p~n", [OpponentID]),
           {reply, {ok, OpponentPID}, State};
         [] -> {reply, {error, not_found}, State}

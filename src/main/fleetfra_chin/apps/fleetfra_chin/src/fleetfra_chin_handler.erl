@@ -1,11 +1,13 @@
 -module(fleetfra_chin_handler).
 -behaviour(cowboy_handler).
 -author("SaveMos").
+
 -export([
     init/2 ,
     process_request/1 ,
     parse_json/1 ,
-    build_response/1, build_response/4
+    build_response/1, build_response/3,
+    send_update_to_other_player/3
 ]).
 
 %%==============================================================================%%
@@ -81,8 +83,8 @@ process_request(Body) ->
             Col = maps:get(<<"col">>, Move),
 
             case fleetfra_game:make_move(GameID, {Player, {Row, Col}}) of
-                {ok, NewValue, WaitingPlayerAtom} ->
-                    build_response(<<"OK: Move accepted [", (utility:to_binary(NewValue))/binary, "]">>, GameID, Player, WaitingPlayerAtom);
+                {ok, NewValue} ->
+                    build_response(<<"OK: Move accepted [", (utility:to_binary(NewValue))/binary, "]">>);
 
                 {error, invalid_move} ->
                     build_response(<<"Invalid move">>);
@@ -105,8 +107,8 @@ process_request(Body) ->
                 {error, game_not_initiated} ->
                     build_response(<<"ERROR: Game found but not initiated">>);
 
-                {fin, winner, WaitingPlayerAtom} ->
-                    build_response(<<"VICTORY">>, GameID, Player, WaitingPlayerAtom);
+                {fin, winner} ->
+                    build_response(<<"VICTORY">>);
 
                 {fin, loser} ->
                     build_response(<<"DEFEAT">>)
@@ -124,8 +126,6 @@ process_request(Body) ->
 %% @end
 %%-------------------------------------------------------------------
 parse_json(Body) ->
-    jsx:decode(Body, [{return_maps, true}]);
-parse_json({jsx , Body}) ->
     jsx:decode(Body, [{return_maps, true}]).
 
 %%-------------------------------------------------------------------
@@ -151,10 +151,9 @@ build_response(Message) ->
 %% @end
 %%-------------------------------------------------------------------
 
-build_response(Message, GameID, CurrentPlayer, WaitingPlayer) ->
+build_response(Message, GameID, WaitingPlayer) ->
     Response = decode_json(Message),
-    %PlayerAtom = utility:bin_to_atom(CurrentPlayer),
-    %send_update_to_other_player(GameID , PlayerAtom, WaitingPlayer , Response),
+    send_update_to_other_player(GameID , WaitingPlayer , Response),
     Response.
 
 
@@ -163,6 +162,7 @@ build_response(Message, GameID, CurrentPlayer, WaitingPlayer) ->
 %% @copyright (C) 2025, <FleetFra>
 %% @doc Decode a MAP into a JSON message using the JSX library.
 %% @param Message The message to include in the response.
+%% @returns The JSON-encoded message.
 %% @end
 %%-------------------------------------------------------------------
 
@@ -174,21 +174,19 @@ decode_json(Message) ->
 %% @copyright (C) 2025, <FleetFra>
 %% @doc Sends a game update to the opponent player.
 %% @param GameID The unique gam identifier.
-%% @param CurrentPlayer The current playing player.
+%% @param WaitingPlayer The target player.
 %% @param GameState The current game state.
+%% @returns Nothing.
 %% @end
 %%------------------------------------------------------------------------------
 
-send_update_to_other_player(GameID, CurrentPlayer, WaitingPlayer, Response) ->
+send_update_to_other_player(GameID, WaitingPlayer, Response) ->
     Name = utility:concat_game_player(GameID, WaitingPlayer),
     case erlang:whereis(Name) of
         undefined ->
-            io:format("Failed to find opponent PID for ~p~n", [CurrentPlayer]),
-            ok;
+            {do_not_exists};
         Pid ->
-            io:format("Sending update to opponent PID: ~p~n", [Pid]),
             fleetfra_chin_user_handler:send_message(Name, Response),
-            %OtherPid ! {game_update, Response},
-            %gen_server:cast(OtherPid, {game_update, Response}),
-            io:format("Message sent to opponent: ~p~n", [Response])
+            Pid ! {game_update, Response},
+            {ok}
     end.

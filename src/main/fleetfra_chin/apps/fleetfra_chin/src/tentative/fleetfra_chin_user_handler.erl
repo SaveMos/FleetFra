@@ -123,13 +123,13 @@ handle_call(_Request, _From, State) ->
 %%-------------------------------------------------------------------
 handle_cast({send, Msg}, State) ->
   %% Log the received message
-  io:format("USER-HANDLER: Player2 received game update: ~p~n", [Msg]),
+  io:format("USER-HANDLER: Player2 received game update: ~p ~p ~n", [Msg, State]),
 
   %% Convert the message to a JSON format with a "game_update" type
   JsonMessage = jsx:encode([{<<"type">>, game_update}, {<<"msg">>, Msg}]),
 
   %% Return the message and forward it to the WebSocket client
-  {{text, JsonMessage}, Msg}.
+  {{text, JsonMessage}, Msg, State}.
 
 %%-------------------------------------------------------------------
 %% @doc

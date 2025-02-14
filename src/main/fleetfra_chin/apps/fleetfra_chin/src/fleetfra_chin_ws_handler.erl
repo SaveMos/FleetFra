@@ -7,7 +7,8 @@
   websocket_handle/2,
   websocket_info/3,
   websocket_info/2,
-  terminate/3
+  terminate/3,
+  extract_params/1, register_websocket_process/2
 ]).
 
 %%==============================================================================%%
@@ -20,7 +21,7 @@
 %% @end
 %%==============================================================================%%
 
--record(client, {pid}).
+%-record(client, {pid}).
 
 %%------------------------------------------------------------------------------
 %% @author SaveMos
@@ -155,8 +156,6 @@ websocket_info({game_update, Response}, Req, State) ->
 websocket_info(_Info, Req, State) ->
   {ok, Req, State}.
 
-websocket_info({debug_message, Msg}, State) ->
-  {ok, State};
 websocket_info(_Info, State) ->
   {ok, State}.
 

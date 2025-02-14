@@ -19,7 +19,7 @@
 %% GenServer Callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]).
 
--export([handle_sync_call/1]).
+-export([handle_sync_call/1, verify_propagation/2]).
 
 -record(game, {game_id, players, battlefields, current_turn, game_over, winner, created_at}).
 -define(ETS_TABLE, game_state_table).
@@ -165,14 +165,35 @@ handle_call({update, GameID, NewGameState}, _From, State) ->
       {reply, {error, not_found}, State}
   end.
 
+%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc
+%% Synchronization operation, done between game state managers.
+%% Handles updating a game state in ETS. If the game state exists, it is overwritten.
+%% @param {sync_put, GameID, GameState} A tuple with the GameID and the updated GameState.
+%% @returns {ok} if the game state is successfully updated, or {error, not_found} if the GameID doesn't exist.
+%% @end
+%%-------------------------------------------------------------------
+
 handle_sync_call({sync_put, GameID, GameState}) ->
   ets:insert(?ETS_TABLE, {GameID, GameState}),
   {reply, ok};
+
+%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc
+%% Synchronization operation, done between game state managers.
+%% Handles deleting a game state in ETS.
+%% @param {sync_delete, GameID, GameState} A tuple with the GameID and the updated GameState.
+%% @returns {ok} if the game state is successfully updated, or {error, not_found} if the GameID doesn't exist.
+%% @end
+%%-------------------------------------------------------------------
+
 handle_sync_call({sync_delete, GameID}) ->
   ets:delete(?ETS_TABLE, GameID),
   {reply, ok}.
-
-
 
 
 %%-------------------------------------------------------------------
@@ -194,12 +215,10 @@ handle_cast({push, Item}, State) ->
 %% @returns The updated state with the top item removed.
 %% @end
 %%-------------------------------------------------------------------
-handle_cast({pop}, [Head | Tail]) ->
+handle_cast({pop}, [_ | Tail]) ->
   {noreply, Tail};
 handle_cast({pop}, []) ->
   {noreply, []}.
-
-
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
@@ -213,7 +232,7 @@ handle_cast({pop}, []) ->
 %%-------------------------------------------------------------------
 handle_info(clean_old_games, State) ->
   Now = erlang:system_time(second),
-  ExpirationTime = fleetfra_chin_configuration:get_max_match_age(),  % 20 seconds for testing
+  ExpirationTime = fleetfra_chin_configuration:get_max_match_age(),
   % Retrieve all game states from ETS
   Games = ets:tab2list(?ETS_TABLE),
   lists:foreach(fun({GameID, GameState}) ->
@@ -244,45 +263,51 @@ handle_info(_Msg, State) ->
 %% Synchronization Helpers
 %%==============================================================================%%
 
+%%-------------------------------------------------------------------
+%% @author SaveMos
+%% @copyright (C) 2025, <FleetFra>
+%% @doc
+%% Send a message to all the registered game state managers.
+%% The update operation follow the eventual consistency paradigm.
+%% @param Message is the message to send.
+%% @returns {ok} Everything gone well, error otherwise.
+%% @end
+%%-------------------------------------------------------------------
+
 propagate_update(Message) ->
-  %io:format("Known nodes: ~p~n", [?KNOWN_NODES]),  % Log della lista dei nodi
+  %io:format("Known nodes: ~p~n", [?KNOWN_NODES]),
   lists:foreach(fun(Node) ->
-    %io:format("Pinging node ~p: ~p~n", [Node, net_adm:ping(Node)]), % Log per vedere il risultato del ping
+    % For each registered node.
+    %io:format("Pinging node ~p: ~p~n", [Node, net_adm:ping(Node)]),
     case Node =/= node() of
-      true -> % Se il nodo è diverso, prova a inviare il messaggio
-        %io:format("Trying to send message to ~p~n", [Node]),  % Log di tentativo di invio
+      true -> %
+        %io:format("Trying to send message to ~p~n", [Node]),
         case net_adm:ping(Node) of
-          pong -> % Se il nodo remoto è raggiungibile
+          pong -> % Remote node reachable.
             %%io:format("Node ~p is reachable, sending message ~n", [Node]),
             try
-              rpc:call(Node, ?MODULE, handle_sync_call, [Message])
+              rpc:call(Node, ?MODULE, handle_sync_call, [Message]) % Async operation.
             of
               {reply, ok} ->
                 %io:format("Message sent successfully to ~p~n", [Node]),
                 pass;
               {badrpc, Reason} ->
-                %io:format("RPC call failed to ~p with reason: ~p~n", [Node, Reason]);
-                pass;
+                io:format("RPC call failed to ~p with reason: ~p~n", [Node, Reason]);
               {error, Reason} ->
-                pass;
-                %io:format("RPC call failed to ~p with reason: ~p~n", [Node, Reason]);
+                io:format("RPC call failed to ~p with reason: ~p~n", [Node, Reason]);
               Unexpected ->
-                pass
-                %io:format("Unexpected RPC result from ~p: ~p~n", [Node, Unexpected])
+                io:format("Unexpected RPC result from ~p: ~p~n", [Node, Unexpected])
             catch
               error:Reason ->
-                %io:format("RPC failed to ~p with exception: ~p~n", [Node, Reason])
-                pass
+                io:format("RPC failed to ~p with exception: ~p~n", [Node, Reason])
             end;
-          _ -> % Nodo remoto non raggiungibile
-            %io:format("Node ~p is not reachable~n", [Node])
-            pass
+          _ -> % Remote node unreachable.
+            io:format("Node ~p is not reachable~n", [Node])
         end;
       false ->
-        %io:format("Skipping sending message to the current node ~p~n", [node()]),
-        ok % Non inviare il messaggio al nodo stesso
+        ok % Do not send message to self.
     end
-                end, ?KNOWN_NODES).
+ end, ?KNOWN_NODES).
 
 
 verify_propagation(GameID, ExpectedState) ->
@@ -294,7 +319,6 @@ verify_propagation(GameID, ExpectedState) ->
         io:format("Propagation failed on node ~p (data not found)~n", [Node]);
       Other ->
         io:format("Unexpected result from node ~p: ~p~n", [Node, Other])
-    end
-                end, ?KNOWN_NODES).
+    end  end, ?KNOWN_NODES).
 
 
