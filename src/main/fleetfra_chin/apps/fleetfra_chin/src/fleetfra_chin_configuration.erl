@@ -50,7 +50,7 @@ get_auto_clean_period() -> 3600*1000.
 %% @returns An integer, the maximum match age in seconds.
 %% @end
 %%-------------------------------------------------------------------
-get_max_match_age() -> 24*3600.
+get_max_match_age() -> 3600*1.
 
 %%-------------------------------------------------------------------
 %% @author SaveMos
